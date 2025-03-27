@@ -1,0 +1,63 @@
+#cloud-config
+hostname: ${hostname}
+fqdn: ${fqdn}
+# resize partitions
+growpart:
+  mode: auto
+  devices: ['/']
+# Configure APT
+# OUTDATED! Debian uses /etc/apt/sources.list.d/debian.sources which is not affected by sources_list
+#apt:
+#  sources_list: |
+#    deb http://deb.debian.org/debian $RELEASE main contrib non-free non-free-firmware
+#    #deb-src http://ftp.de.debian.org/debian $RELEASE main contrib non-free non-free-firmware
+#    deb http://deb.debian.org/debian $RELEASE-updates main contrib non-free non-free-firmware
+#    #deb-src http://deb.debian.org/debian $RELEASE-updates main contrib non-free non-free-firmware
+#    deb http://security.debian.org/debian-security $RELEASE-security main contrib non-free non-free-firmware
+#    #deb-src http://security.debian.org/debian-security $RELEASE-security main contrib non-free non-free-firmware
+#    deb http://deb.debian.org/debian $RELEASE-backports main contrib non-free non-free-firmware
+#    #deb-src http://deb.debian.org/debian $RELEASE-backports main contrib non-free non-free-firmware
+# manually write debian.sources
+write_files:
+  - path: /etc/apt/sources.list.d/debian.sources
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      Types: deb
+      URIs: mirror+file:///etc/apt/mirrors/debian.list
+      Suites: ${distro_release} ${distro_release}-updates ${distro_release}-backports
+      Components: main contrib non-free non-free-firmware
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+      Types: deb
+      URIs: mirror+file:///etc/apt/mirrors/debian-security.list
+      Suites: ${distro_release}-security
+      Components: main contrib non-free non-free-firmware
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+# Update apt database and packages on first boot
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+# Install packages
+packages:
+  - htop
+  - vim
+  - man
+  - xz-utils
+  - zstd
+  - tmux
+  - tcpdump
+  - curl
+  - wget
+# Users
+users:
+  - default
+  - name: ${username}
+    gecos: ${usergecos}
+    primary_group: ${username}
+    groups: sudo
+    lock_passwd: false
+    shell: /bin/bash
+    passwd: ${password}
+    ssh_authorized_keys:
+      - ${ssh_key}
