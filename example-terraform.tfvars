@@ -34,12 +34,25 @@ user_config = {
 }
 #
 #
-# Network Config
-case_network = {
-  addresses     = ["10.10.10.0/29"]
+# Network Configs
+#
+# Access Network
+#
+access_network = {
+  addresses     = ["192.168.66.0/29"]
   domain        = "incident-responders.org"
   external_addr = "192.168.0.1"
+  external_dns  = "8.8.8.8"
 }
+# Case Network
+case_network = {
+  network_addr  = "10.10.10.0/24"
+  nework_cidr   = "24"
+}
+#
+#
+# Semi-static configurations
+# You likely would not need to change anything below here
 #
 #
 # Pool Configs

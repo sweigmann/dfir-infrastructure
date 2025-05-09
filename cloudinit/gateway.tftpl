@@ -1,0 +1,193 @@
+#cloud-config
+#
+hostname: ${hostname}
+fqdn: ${fqdn}
+# Configure APK
+apk_repos:
+  alpine_repo:
+    base_url: 'http://dl-cdn.alpinelinux.org/alpine'
+    community_enabled: true
+    version: '${distro_release}'
+# Update apk database and packages on first boot
+package_update: true
+#package_upgrade: true
+#package_reboot_if_required: true
+# Install packages
+packages:
+  - busybox-static
+  - apk-tools-static
+  - pwgen
+  - htop
+  - mandoc
+  - man-pages
+  - less
+  - vim
+  - less-doc
+  - iptables
+  - iptables-doc
+  - connman-iptables
+  - iptables-openrc
+  - ip6tables
+  - ip6tables-openrc
+  - tcpdump
+  - wget
+  - unbound
+  - bind-tools
+  - py3-pyserial
+  - py3-netifaces
+# Set network options
+manage_resolv_conf: true
+resolv_conf:
+  nameservers:
+    - ${nameserver}
+# Write files to prepare:
+# * configure Firewall
+# * enable routing
+# * make network config semi-static
+write_files:
+  - path: /etc/iptables/rules-save
+    permissions: '0600'
+    owner: 'root:root'
+    encoding: gzip
+    content: !!binary |
+      H4sIAAAAAAACA82UTXObMBCG7/yKnfjSdioHSNtQbhTUxDMxUMCTQ6cHIq9rpUaoSPZM/n3FRzL9sLHbXDrMsCAt7/ssknYCVyiwKTUu4e4BuNTl3QYVUeUOYedMvakHtYBii5CjBOcCHMd33vjOe3Bt17VerfhGY2P5szhdFBBlSQqfbd/+Yvkfk+w2yCIIwpCmxeNosijaxF8GuzuQAHoRUgGrhdBNyb4BIUwrbfggozdBQaPXNC+CDzez/JpGQO4HpT80FDju5dRur3NvJE8CZ5VsPftI2kD0g0TwDpHE9LafqioUup0Yns6GsrgwI1x87TWRrWt4Ic37S2jw+xaVVmejSJp1RF0gS1k3Glz3n2mUWncfItO8Fgp0DYPkuXEYI+GAem23RNtlR9SFgeidd8iWMZQaouswBQO7WnEGS1M0F2aTGXO9RmAb3uYqbHac4VEG55SFOgQyC+cp0HYRMpTGV51m9z+UvI/h8gSGU7bZqMvbiyMucf58E8c94hIX+0sJk/l8VlgTCOtKbrBtXmNNavLcJidKbflpRjPTvWbx1W8trS/1eJvz0yQv9ko8/bWfM0g9nL57mAf5pwXNgoj+bek/AK3tdpvgBQAA
+  - path: /etc/iptables/rules6-save
+    permissions: '0600'
+    owner: 'root:root'
+    encoding: gzip
+    content: !!binary |
+      H4sIAAAAAAAAA62VQW+CMBTH73yKl3hbVm0RGOuNQedIVEip4bDsgKwmbopEGhO//WDOZJsbwZRLm7z2/fr/v7y2A5jIQu4zJV9heYR16ahsuZEVqrKDhAMZukMXdgWk9XoiSyAWEJtil5oOmNg0jZsiUwaNOePRQoTzCXi+z2IBz5jiF4OG83ghfsXqjZfBOErEnwg/ms1CYQzA323LjWyEtukZaBtarTdK7s/SAx7FZ42PEU89HnSw8zkC8uAEQVvId0Wh9ln+DgjlqlK1QOBs6gkW3LJEeA/TMHliAaC3L9IFowJKyYiYbuuelXQxpSOC/zt0ztIWQFlX7OCgdb4tG0AzO3VyM9dhdSwlEL10Uy99rJduaXofa55PxtoKbF2Aowu40wRYmi1ErLYm+nEHOvnBvdLazF1P69Wppdu9Vtvj0wlw36cfu9da273W2v5e6ys/sQ/SpyUhlgcAAA==
+  - path: /etc/sysctl.conf
+    permissions: '0644'
+    owner: 'root:root'
+    encoding: gzip
+    content: !!binary |
+      H4sIAAAAAAAAA3XLMQrDMAyF4T2nEGTrIFPo2rMEY8tUVFhGUhNy+5puLXR9//tWKNqDeoA2iAc7NBaCg0VAdzLjSpAoSvLTSwjWdFnWpVMgj/2GUzes1PJLAm1sUwcZ3OH688ki/3qUsfnZi+qTyb8bT6J2ZKuf/Q11f3ZZrwAAAA==
+  - path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      network: {config: disabled}
+  - path: /etc/network/interfaces
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      auto lo
+      iface lo inet loopback
+      dns-nameservers ${nameserver}
+
+      # NIC to the "external" world
+      auto eth0
+      iface eth0 inet dhcp
+      #mtu 1442
+
+      # NIC to the case network
+      auto eth1
+      iface eth1 inet static
+      address ${internal_addr}/${internal_cidr}
+      #mtu 1442
+
+      # Dead NIC to use as blackhole if you need something with an IP address
+      # Otherwise, a blackhole route will do:
+      #   ip route add blackhole 192.168.0.195/32
+      # ...which would swallow all traffic from and to 192.168.0.195/32
+      auto vif0
+      iface vif0 inet static
+      pre-up /sbin/ip link add vif0 type dummy
+      pre-up /sbin/ip link set up dev vif0
+      up /sbin/ip link set vif0 promisc on
+      down /sbin/ip link set vif0 promisc off
+      address 192.168.255.254/24
+  - path: /etc/unbound/unbound.conf
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      server:
+        verbosity: 1
+        ## Specify the interface address to listen on:
+        interface: ${internal_addr}
+        ## To listen on all interfaces use:
+        #interface: 0.0.0.0
+        do-ip4: yes
+        do-ip6: no
+        do-udp: yes
+        do-tcp: yes
+        do-daemonize: yes
+        access-control: ${internal_net}/${internal_cidr} allow
+        ## Minimum lifetime of cache entries in seconds.  Default is 0.
+        #cache-min-ttl: 60
+        ## Maximum lifetime of cached entries. Default is 86400 seconds (1 day).
+        cache-max-ttl: 3600
+        ## enable to prevent answering id.server and hostname.bind queries.
+        hide-identity: yes
+        ## enable to prevent answering version.server and version.bind queries.
+        hide-version: yes
+        # print one line with time, IP, name, type, class for every query.
+        log-queries: yes
+        # print one line per reply, with time, IP, name, type, class, rcode,
+        # timetoresolve, fromcache and responsesize.
+        log-replies: yes
+        # log with tag 'query' and 'reply' instead of 'info' for
+        # filtering log-queries and log-replies from the log.
+        log-tag-queryreply: yes
+        # log the local-zone actions, like local-zone type inform is enabled
+        # also for the other local zone types.
+        log-local-actions: yes
+        # print log lines that say why queries return SERVFAIL to clients.
+        log-servfail: yes
+      ## default is to use syslog, which will log to /var/log/messages.
+      use-syslog: no
+      ## to log elsewhere, set 'use-syslog' to 'no' and set the log file location below:
+      logfile: /var/log/unbound.log
+      python:
+      remote-control:
+        control-enable: no
+      ## Note: for forward-zones, the destination servers must be able to handle recursion to other DNS servers
+      forward-zone:
+        name: "${internal_domain}"
+        forward-addr: ${internal_dns}
+      ## Forward all other queries to the specified DNS servers
+      forward-zone:
+        name: "."
+        forward-addr: ${nameserver}
+# If you want swap space, uncomment and adapt the following section
+#swap:
+#  filename: /swap.img
+#  #size: "auto" # or size in bytes
+#  #maxsize: 10485760   # size in bytes
+#  # Set SWAP space to a fixed size of 100M
+#  size: 104857600
+# Users
+users:
+  - default
+  - name: ${username}
+    gecos: ${usergecos}
+    primary_group: ${username}
+    groups: wheel, sudo
+    lock_passwd: false
+    passwd: ${password}
+    ssh_authorized_keys:
+      - ${ssh_key}
+# On each boot, do
+bootcmd:
+  - [ apk, upgrade, --update-cache, --available ]
+  - [ hostname, "${fqdn}" ]
+# On first boot, do
+runcmd:
+  - [ apk, upgrade, --update-cache, --available ]
+  - [ sysctl, -p ]
+  - [ iptables-restore, <, /etc/iptables/rules-save]
+  - [ rc-update, add, iptables, default ]
+  #- [ service, iptables, start ]
+  - [ ip6tables-restore, <, /etc/iptables/rules6-save]
+  - [ rc-update, add, ip6tables, default ]
+  #- [ service, ip6tables, start ]
+  - [ sed, -i, -e, 's/^#LogLevel INFO/LogLevel VERBOSE/', -e, 's/^AllowTcpForwarding no/AllowTcpForwarding yes/', -e, 's/^X11Forwarding no/X11Forwarding yes/', /etc/ssh/sshd_config ]
+  #- [ service, sshd, restart ]
+  - [ rc-update, add, unbound, default ]
+  #- [ service, unbound, start ]
+  #- [ wget, -q, -O, /root/user_data, http://169.254.169.254/openstack/latest/user_data ]
+  ## REBOOT needed to bring up the network config suitable for gateway ops
+  - [ busybox, reboot ]
+# EOF .
+#

@@ -24,13 +24,13 @@ write_files:
     owner: 'root:root'
     content: |
       Types: deb
-      URIs: mirror+file:///etc/apt/mirrors/debian.list
+      URIs: http://deb.debian.org/debian/
       Suites: ${distro_release} ${distro_release}-updates ${distro_release}-backports
       Components: main contrib non-free non-free-firmware
       Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
       Types: deb
-      URIs: mirror+file:///etc/apt/mirrors/debian-security.list
+      URIs: http://security.debian.org/debian-security/
       Suites: ${distro_release}-security
       Components: main contrib non-free non-free-firmware
       Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
@@ -47,17 +47,71 @@ packages:
   - zstd
   - tmux
   - tcpdump
-  - curl
+  - bind9-dnsutils
   - wget
+  - curl
+  - git
+  - git-lfs
+  - pwgen
+  - ipcalc
+  - command-not-found
+  - gnupg2
+  - software-properties-common
+  - python3-podman
+  - podman-toolbox
+  - podman-docker
+  - podman-compose
+  - podman
+  - pipx
+  - python3-dev
+  - build-essential
+  - automake
+  - autoconf
+  - libtool
+# Groups
+groups:
+  - dfir
 # Users
 users:
   - default
   - name: ${username}
     gecos: ${usergecos}
     primary_group: ${username}
-    groups: sudo
+    groups:
+      - sudo
+      - dfir
     lock_passwd: false
     shell: /bin/bash
     passwd: ${password}
     ssh_authorized_keys:
       - ${ssh_key}
+# Disks - prepare partition for case data
+device_aliases:
+  podman_data: /dev/disk/by-id/wwn-0xb0bafe77600dda7a
+disk_setup:
+  podman_data:
+    table_type: 'gpt'
+    overwrite: false
+    layout: [ 100 ]
+fs_setup:
+  device: podman_data
+  filesystem: ext4
+  label: data
+mounts:
+  - [ podman_data.1, /data, ext4, "defaults,discard,group,nofail", "0", "0" ]
+# On each boot, do
+bootcmd:
+  - [ apt, update ]
+  - [ apt, upgrade, -y ]
+  - [ apt, clean ]
+    # Bug: setting hostname and domain does not work.
+  #- [ hostname, "${fqdn}" ]
+# On first boot, do
+runcmd:
+  - [ chown, -R, root:dfir, /data ]
+  - [ chmod, 2775, /data ]
+  - [ apt, update ]
+  - [ apt-file, update ]
+  - [ update-command-not-found ]
+#  - [ pipx, install, git+https://github.com/log2timeline/plaso.git@20241006 ]
+  - [ /sbin/reboot ]

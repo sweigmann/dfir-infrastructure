@@ -73,16 +73,33 @@ variable "dfir_pool_config" {
 #
 #
 # Network Configuration
-variable "case_network" {
-  description = "Network configuration for this case"
+#
+# Access Network
+variable "access_network" {
+  description = "Network configuration for jump hosts"
   type = object({
     addresses = list(string)
     domain = string
     external_addr = string
+    external_dns = string
   })
   default = {
-    addresses = [ "10.10.10.0/24" ]
+    addresses = [ "127.31.255.0/29" ]
     domain = "your-domain-for-dfir.org"
     external_addr = "192.168.0.1"
+    external_dns = "8.8.8.8"
+  }
+}
+#
+# Case Network
+variable "case_network" {
+  description = "Network configuration for this case"
+  type = object({
+    network_addr = string
+    network_cidr = string
+  })
+  default = {
+    network_addr = "10.10.10.0"
+    network_cidr = "24"
   }
 }
