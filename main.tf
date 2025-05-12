@@ -25,12 +25,12 @@ locals {
   access_network_gateway = libvirt_domain.gateway.network_interface.0.addresses.0
   case_network_dhcp_first = cidrhost("${var.case_network.network_addr}/${var.case_network.network_cidr}", 3)
   case_network_dhcp_last = cidrhost("${var.case_network.network_addr}/${var.case_network.network_cidr}", 6)
-  # FQDN for bastion differs to put DNS record into the access network
-  fqdn_bastion = "bastion-${local.case_network_domain}"
-  # FQDNs for all other hosts are made to be put into the case network
+  # FQDN for bastion differs as it lives within the access network
+  fqdn_bastion = "bastion.${var.access_network.domain}"
+  # FQDNs for all other hosts which live within the case network
   fqdn_gateway = "gateway.${local.case_network_domain}"
   fqdn_worker = "worker.${local.case_network_domain}"
-    fqdn_siftstation = "siftstation.${local.case_network_domain}"
+  fqdn_siftstation = "siftstation.${local.case_network_domain}"
 }
 #
 #
@@ -275,7 +275,7 @@ resource "libvirt_volume" "bastion_root" {
 }
 # bastion domain
 resource "libvirt_domain" "bastion" {
-  name = "${local.case_id}-bastion"
+  name = "bastion"
   autostart = true
   memory = "1024"
   vcpu = 1
