@@ -29,7 +29,8 @@ locals {
   fqdn_bastion = "bastion-${local.case_network_domain}"
   # FQDNs for all other hosts are made to be put into the case network
   fqdn_gateway = "gateway.${local.case_network_domain}"
-  fqdn_podman = "podman.${local.case_network_domain}"
+  fqdn_worker = "worker.${local.case_network_domain}"
+    fqdn_siftstation = "siftstation.${local.case_network_domain}"
 }
 #
 #
@@ -138,6 +139,10 @@ resource "libvirt_network" "case_network" {
 # Timers to give nodes time to finish internal setup
 resource "time_sleep" "wait_for_gateway" {
   depends_on =  [ libvirt_domain.gateway ]
+  create_duration = "60s"
+}
+resource "time_sleep" "wait_for_worker" {
+  depends_on =  [ libvirt_domain.worker ]
   create_duration = "60s"
 }
 # gateway init
@@ -304,8 +309,8 @@ resource "libvirt_domain" "bastion" {
   }
 }
 #
-# podman init
-data "cloudinit_config" "user_data_podman" {
+# worker init
+data "cloudinit_config" "user_data_worker" {
   # https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/config
   gzip            = false
   base64_encode   = false
@@ -313,11 +318,13 @@ data "cloudinit_config" "user_data_podman" {
     filename      = "cloud-config.yaml"
     content_type  = "text/cloud-config"
     content       = templatefile(
-      "${path.module}/cloudinit/podman.tftpl",
+      "${path.module}/cloudinit/worker.tftpl",
       {
-        hostname        = "podman"
-        fqdn            = local.fqdn_podman
+        hostname        = "worker"
+        fqdn            = local.fqdn_worker
         distro_release  = "bookworm"
+        internal_net    = var.case_network.network_addr
+        internal_cidr   = var.case_network.network_cidr
         username        = var.user_config.username
         usergecos       = var.user_config.usergecos
         password        = var.user_config.password
@@ -326,56 +333,56 @@ data "cloudinit_config" "user_data_podman" {
     )
   }
 }
-#data "couldinit_config" "meta_data_podman" {
+#data "couldinit_config" "meta_data_worker" {
 #  gzip            = false
 #  base64_encode   = false
 #  part {
 #    filename      = "meta-data.yaml"
 #  }
 #}
-resource "libvirt_cloudinit_disk" "cloudinit_podman" {
-  name            = "cloudinit_podman.iso"
-  user_data       = data.cloudinit_config.user_data_podman.rendered
+resource "libvirt_cloudinit_disk" "cloudinit_worker" {
+  name            = "cloudinit_worker.iso"
+  user_data       = data.cloudinit_config.user_data_worker.rendered
   #network_config  = data.template_file.network_config.rendered
   pool            = libvirt_pool.case_pool.name
 }
-# podman root volume -- 10G
-resource "libvirt_volume" "podman_root" {
-  name = "podman-root.qcow2"
+# worker root volume -- 10G
+resource "libvirt_volume" "worker_root" {
+  name = "worker-root.qcow2"
   format = "qcow2"
   size = 10000000000
   pool = libvirt_pool.case_pool.name
   base_volume_id = libvirt_volume.debian_12.id
   base_volume_pool = libvirt_pool.base_pool.name
 }
-# podman data volume -- 100G
-resource "libvirt_volume" "podman_data" {
-  name = "podman-data.qcow2"
+# worker data volume -- 100G
+resource "libvirt_volume" "worker_data" {
+  name = "worker-data.qcow2"
   format = "qcow2"
   size = 100000000000
   pool = libvirt_pool.case_pool.name
 }
-# podman domain
-resource "libvirt_domain" "podman" {
-  name = "${local.case_id}-podman"
+# worker domain
+resource "libvirt_domain" "worker" {
+  name = "${local.case_id}-worker"
   depends_on = [
     libvirt_domain.gateway,
     time_sleep.wait_for_gateway
   ]
   autostart = true
-  memory = "8192"
-  vcpu = 4
-  cloudinit = libvirt_cloudinit_disk.cloudinit_podman.id
+  memory = "16384"
+  vcpu = 6
+  cloudinit = libvirt_cloudinit_disk.cloudinit_worker.id
   cpu {
     mode = "host-passthrough"
   }
   disk {
-    volume_id = libvirt_volume.podman_root.id
+    volume_id = libvirt_volume.worker_root.id
     scsi = true
     wwn = "b0bafe77600db007"
   }
   disk {
-    volume_id = libvirt_volume.podman_data.id
+    volume_id = libvirt_volume.worker_data.id
     scsi = true
     # define an arbitrary WSN to enable identification in the guest os
     # results:
@@ -385,7 +392,7 @@ resource "libvirt_domain" "podman" {
   }
   network_interface {
     network_id = libvirt_network.case_network.id
-    hostname = local.fqdn_podman
+    hostname = local.fqdn_worker
     wait_for_lease = true
   }
   console {
@@ -403,4 +410,105 @@ resource "libvirt_domain" "podman" {
     listen_type = "address"
     autoport    = true
   }
+}
+#
+# siftstation init
+data "cloudinit_config" "user_data_siftstation" {
+  # https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/config
+  gzip            = false
+  base64_encode   = false
+  part {
+    filename      = "cloud-config.yaml"
+    content_type  = "text/cloud-config"
+    content       = templatefile(
+      "${path.module}/cloudinit/siftstation.tftpl",
+      {
+        hostname        = "siftstation"
+        fqdn            = local.fqdn_siftstation
+        distro_release  = "bookworm"
+        internal_net    = var.case_network.network_addr
+        internal_cidr   = var.case_network.network_cidr
+        worker_addr     = libvirt_domain.worker.network_interface.0.addresses.0
+        username        = var.user_config.username
+        usergecos       = var.user_config.usergecos
+        password        = var.user_config.password
+        ssh_key         = var.user_config.ssh_key
+      }
+    )
+  }
+}
+#data "couldinit_config" "meta_data_siftstation" {
+#  gzip            = false
+#  base64_encode   = false
+#  part {
+#    filename      = "meta-data.yaml"
+#  }
+#}
+resource "libvirt_cloudinit_disk" "cloudinit_siftstation" {
+  name            = "cloudinit_siftstation.iso"
+  user_data       = data.cloudinit_config.user_data_siftstation.rendered
+  #network_config  = data.template_file.network_config.rendered
+  pool            = libvirt_pool.case_pool.name
+}
+# siftstation root volume -- 10G
+resource "libvirt_volume" "siftstation_root" {
+  name = "siftstation-root.qcow2"
+  format = "qcow2"
+  size = 10000000000
+  pool = libvirt_pool.case_pool.name
+  base_volume_id = libvirt_volume.debian_12.id
+  base_volume_pool = libvirt_pool.base_pool.name
+}
+# siftstation domain
+resource "libvirt_domain" "siftstation" {
+  name = "${local.case_id}-siftstation"
+  depends_on = [
+    libvirt_domain.worker,
+    time_sleep.wait_for_worker
+  ]
+  autostart = true
+  memory = "8192"
+  vcpu = 4
+  cloudinit = libvirt_cloudinit_disk.cloudinit_siftstation.id
+  cpu {
+    mode = "host-passthrough"
+  }
+  disk {
+    volume_id = libvirt_volume.siftstation_root.id
+    scsi = true
+  }
+  network_interface {
+    network_id = libvirt_network.case_network.id
+    hostname = local.fqdn_siftstation
+    wait_for_lease = true
+  }
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
+  }
+  console {
+    type        = "pty"
+    target_type = "virtio"
+    target_port = "1"
+  }
+  graphics {
+    type        = "spice"
+    listen_type = "address"
+    autoport    = true
+  }
+}
+#
+#
+# Prepare some information to pass to the users
+#
+# How to connect to the boxes via SSH...
+output "ssh_config_bastion" {
+  value = "ssh -D <proxyport> -N -f -l <user> ${local.fqdn_bastion}"
+}
+output "ssh_config_siftstation" {
+  value = "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ${local.fqdn_siftstation}"
+}
+output "ssh_config_worker" {
+  value = "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ${local.fqdn_worker}"
 }

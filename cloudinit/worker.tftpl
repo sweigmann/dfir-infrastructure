@@ -17,7 +17,10 @@ growpart:
 #    #deb-src http://security.debian.org/debian-security $RELEASE-security main contrib non-free non-free-firmware
 #    deb http://deb.debian.org/debian $RELEASE-backports main contrib non-free non-free-firmware
 #    #deb-src http://deb.debian.org/debian $RELEASE-backports main contrib non-free non-free-firmware
-# manually write debian.sources
+# Write files to prepare:
+# * manually write debian.sources
+# * configure NFS
+# * configure locales
 write_files:
   - path: /etc/apt/sources.list.d/debian.sources
     permissions: '0644'
@@ -34,17 +37,38 @@ write_files:
       Suites: ${distro_release}-security
       Components: main contrib non-free non-free-firmware
       Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+  - path: /etc/exports
+    append: true
+    content: |
+      /data ${internal_net}/${internal_cidr}(rw,sync,root_squash,no_subtree_check,crossmnt,fsid=0)
+      /data/read-only ${internal_net}/${internal_cidr}(ro,sync,root_squash,no_subtree_check)
+      /data/read-write ${internal_net}/${internal_cidr}(rw,sync,no_subtree_check)
+  - path: /etc/default/locale
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      LANGUAGE=en_US.UTF-8
+      LC_ALL=en_US.UTF-8
+      LANG=en_US.UTF-8
+      LC_NUMERIC=de_DE.UTF-8
+      LC_TIME=de_DE.UTF-8
+      LC_MONETARY=de_DE.UTF-8
+      LC_PAPER=de_DE.UTF-8
+      LC_MEASUREMENT=de_DE.UTF-8
 # Update apt database and packages on first boot
 package_update: true
 package_upgrade: true
 package_reboot_if_required: true
 # Install packages
 packages:
+  - locales-all
   - htop
   - vim
   - man
+  - rsync
   - xz-utils
   - zstd
+  - pigz
   - tmux
   - tcpdump
   - bind9-dnsutils
@@ -68,6 +92,8 @@ packages:
   - automake
   - autoconf
   - libtool
+  - nfs-kernel-server
+  - nfswatch
 # Groups
 groups:
   - dfir
@@ -87,31 +113,48 @@ users:
       - ${ssh_key}
 # Disks - prepare partition for case data
 device_aliases:
-  podman_data: /dev/disk/by-id/wwn-0xb0bafe77600dda7a
+  worker_data: /dev/disk/by-id/wwn-0xb0bafe77600dda7a
 disk_setup:
-  podman_data:
+  worker_data:
     table_type: 'gpt'
     overwrite: false
     layout: [ 100 ]
 fs_setup:
-  device: podman_data
-  filesystem: ext4
-  label: data
+  - label: data
+    device: worker_data.1
+    filesystem: ext4
+  #- cmd: mkfs -t %(filesystem)s -L %(label)s %(device)s
+  #  label: data
+  #  filesystem: ext4
+  #  device: worker_data.1
 mounts:
-  - [ podman_data.1, /data, ext4, "defaults,discard,group,nofail", "0", "0" ]
+  - [ worker_data.1, /data, ext4, "defaults,discard,group,nofail", "0", "0" ]
 # On each boot, do
 bootcmd:
   - [ apt, update ]
   - [ apt, upgrade, -y ]
   - [ apt, clean ]
+  - [ export, LANGUAGE=en_US.UTF-8 ]
+  - [ export, LANG=en_US.UTF-8 ]
+  - [ export, LC_ALL=en_US.UTF-8 ]
     # Bug: setting hostname and domain does not work.
   #- [ hostname, "${fqdn}" ]
 # On first boot, do
 runcmd:
-  - [ chown, -R, root:dfir, /data ]
-  - [ chmod, 2775, /data ]
+  #- [ chown, -R, root:dfir, /data ]
+  #- [ chmod, 2775, /data ]
+  - [ chown, -R, nobody:dfir, /data ]
+  - [ chmod, 2777, /data ]
+  - [ mkdir, /data/read-only ]
+  - [ mkdir, /data/read-write ]
+  - [ chown, -R, root:dfir, /data/read-only ]
+  - [ chown, -R, root:dfir, /data/read-write ]
+  - [ chmod, 2775, /data/read-only ]
+  - [ chmod, 2775, /data/read-write ]
+  - [ sed, -i, -e, 's/^RPCMOUNTDOPTS=.*$/RPCNFSDOPTS="-N 2 -N 3"\nRPCMOUNTDOPTS="--manage-gids -N 2 -N 3"/g', /etc/default/nfs-kernel-server ]
+  - [ exportfs, -rav ]
   - [ apt, update ]
   - [ apt-file, update ]
   - [ update-command-not-found ]
-#  - [ pipx, install, git+https://github.com/log2timeline/plaso.git@20241006 ]
+  #- [ pipx, install, git+https://github.com/log2timeline/plaso.git@20241006 ]
   - [ /sbin/reboot ]
