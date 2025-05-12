@@ -55,6 +55,32 @@ write_files:
       LC_MONETARY=de_DE.UTF-8
       LC_PAPER=de_DE.UTF-8
       LC_MEASUREMENT=de_DE.UTF-8
+  # Write down some helpers for Timesketch
+  - path: /tmp/create_timesketch_users.sh
+    permissions: '0755'
+    owner: 'root:root'
+    content: |
+      #!/usr/bin/env bash
+      until [ "`docker inspect -f {{.State.Health.Status}} timesketch-web`"=="healthy" ]; do
+        echo "Timesketch Status: `docker inspect -f {{.State.Health.Status}} timesketch-web`";
+        sleep 1;
+      done;
+      docker-compose exec timesketch-web tsctl create-user "${ts_admuser}" --password "${ts_admpass}" && docker-compose exec timesketch-web tsctl make-admin "${ts_admuser}" && echo "timesketch admin user created"
+      docker-compose exec timesketch-web tsctl create-user "${ts_user}" --password "${ts_pass}" && echo "timesketch normal user created"
+  - path: /tmp/docker-compose.yml
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      version: '3'
+      services:
+        notebook:
+          container_name: notebook
+          image: us-docker.pkg.dev/osdfir-registry/timesketch/notebook:latest
+          ports:
+            - 8844:8844
+          restart: on-failure
+          volumes:
+            - /data/srv/timesketch/data/notebook/:/usr/local/src/picadata/
 # Update apt database and packages on first boot
 package_update: true
 package_upgrade: true
@@ -71,6 +97,7 @@ packages:
   - pigz
   - tmux
   - tcpdump
+  - net-tools
   - bind9-dnsutils
   - wget
   - curl
@@ -134,11 +161,14 @@ bootcmd:
   - [ apt, update ]
   - [ apt, upgrade, -y ]
   - [ apt, clean ]
-  - [ export, LANGUAGE=en_US.UTF-8 ]
-  - [ export, LANG=en_US.UTF-8 ]
-  - [ export, LC_ALL=en_US.UTF-8 ]
     # Bug: setting hostname and domain does not work.
   #- [ hostname, "${fqdn}" ]
+  # Start Timesketch containers
+  - [ cd, /data/srv/timesketch ]
+  - [ docker-compose, up, -d ]
+  - [ cd, /data/srv/notebook ]
+  - [ docker-compose, up, -d ]
+  - [ cd ]
 # On first boot, do
 runcmd:
   #- [ chown, -R, root:dfir, /data ]
@@ -156,5 +186,29 @@ runcmd:
   - [ apt, update ]
   - [ apt-file, update ]
   - [ update-command-not-found ]
+  # Set up Timesketch
+  - [ touch, /etc/containers/nodocker ]
+  - [ useradd, --system, --shell, /usr/sbin/nologin, timesketch ]
+  - [ mkdir, /data/srv ]
+  - [ cd, /data/srv ]
+  - [ curl, -s, -O , https://raw.githubusercontent.com/google/timesketch/master/contrib/deploy_timesketch.sh ]
+  - [ sed, -i, 's/docker compose/docker-compose/g', deploy_timesketch.sh ]
+  - [ sed, -i, 's/^chown 1000 /chown timesketch:timesketch /g', deploy_timesketch.sh ]
+  - [ sed, -i, 's/^START_CONTAINER=/START_CONTAINER=yes/', deploy_timesketch.sh ]
+  - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]
+  - [ chmod, 755, deploy_timesketch.sh ]
+  - [ ./deploy_timesketch.sh ]
+  - [ mv, /tmp/create_timesketch_users.sh, /data/srv/timesketch/ ]
+  - [ cd, /data/srv/timesketch/ ]
+  - [ ./create_timesketch_users.sh ]
+  # Set up Notebook
+  - [ mkdir, /data/srv/notebook ]
+  - [ mv, /tmp/docker-compose.yml, /data/srv/notebook/ ]
+  - [ mkdir, /data/srv/timesketch/data/notebook ]
+  - [ chown, -R, timesketch:timesketch, /data/srv/timesketch/data/notebook ]
+  - [ chmod, 777, /data/srv/timesketch/data/notebook/ ]
+  - [ cd, /data/srv/notebook ]
+  - [ docker-compose, up, -d ]
+  - [ cd ]
   #- [ pipx, install, git+https://github.com/log2timeline/plaso.git@20241006 ]
   - [ /sbin/reboot ]

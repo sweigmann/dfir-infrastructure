@@ -15,6 +15,25 @@ provider "libvirt" {
 }
 #
 #
+# Random Strings for later use
+resource "random_string" "random_tsadm_pass" {
+  keepers = {
+    first = "${timestamp()}"
+  }
+  length  = 10
+  special = false
+  upper   = true
+}
+resource "random_string" "random_tsusr_pass" {
+  keepers = {
+    first = "${timestamp()}"
+  }
+  length  = 10
+  special = false
+  upper   = true
+}
+#
+#
 # Local Variables
 locals {
   case_id = "${var.case_config.type}-${var.case_config.code}-${var.case_config.date}"
@@ -31,6 +50,11 @@ locals {
   fqdn_gateway = "gateway.${local.case_network_domain}"
   fqdn_worker = "worker.${local.case_network_domain}"
   fqdn_siftstation = "siftstation.${local.case_network_domain}"
+  # Timesketch config
+  timesketch_admuser = "tsadm"
+  timesketch_admpass = random_string.random_tsadm_pass.result
+  timesketch_user = var.user_config.username
+  timesketch_pass = random_string.random_tsusr_pass.result
 }
 #
 #
@@ -143,7 +167,7 @@ resource "time_sleep" "wait_for_gateway" {
 }
 resource "time_sleep" "wait_for_worker" {
   depends_on =  [ libvirt_domain.worker ]
-  create_duration = "60s"
+  create_duration = "360s"
 }
 # gateway init
 data "cloudinit_config" "user_data_gateway" {
@@ -329,6 +353,10 @@ data "cloudinit_config" "user_data_worker" {
         usergecos       = var.user_config.usergecos
         password        = var.user_config.password
         ssh_key         = var.user_config.ssh_key
+        ts_admuser      = local.timesketch_admuser
+        ts_admpass      = local.timesketch_admpass
+        ts_user         = local.timesketch_user
+        ts_pass         = local.timesketch_pass
       }
     )
   }
@@ -346,11 +374,11 @@ resource "libvirt_cloudinit_disk" "cloudinit_worker" {
   #network_config  = data.template_file.network_config.rendered
   pool            = libvirt_pool.case_pool.name
 }
-# worker root volume -- 10G
+# worker root volume -- 20G
 resource "libvirt_volume" "worker_root" {
   name = "worker-root.qcow2"
   format = "qcow2"
-  size = 10000000000
+  size = 20000000000
   pool = libvirt_pool.case_pool.name
   base_volume_id = libvirt_volume.debian_12.id
   base_volume_pool = libvirt_pool.base_pool.name
@@ -511,4 +539,17 @@ output "ssh_config_siftstation" {
 }
 output "ssh_config_worker" {
   value = "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ${local.fqdn_worker}"
+}
+# How to log onto Timesketch
+output "timesketch_url" {
+  value = "Timesketch URL (via SSH SOCKS): http://${local.fqdn_worker}"
+}
+output "timesketch_notebook_url" {
+  value = "Notebook URL (via SSH SOCKS): http://${local.fqdn_worker}:8844/?token=timesketch"
+}
+output "timesketch_admin_user" {
+  value = "Timesketch privileged user/pass: ${local.timesketch_admuser}/${local.timesketch_admpass}"
+}
+output "timesketch_user" {
+  value = "Timesketch non-priv user/pass: ${local.timesketch_user}/${local.timesketch_pass}"
 }

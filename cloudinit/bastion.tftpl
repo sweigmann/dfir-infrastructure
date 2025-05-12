@@ -64,6 +64,7 @@ packages:
   - pigz
   - tmux
   - tcpdump
+  - net-tools
   - bind9-dnsutils
   - wget
   - curl
@@ -102,9 +103,6 @@ bootcmd:
   - [ apt, upgrade, -y ]
   - [ apt, clean ]
   - [ ip, route, add, "${internal_net}/${internal_cidr}", via, "${gateway_addr}" ]
-  - [ export, LANGUAGE=en_US.UTF-8 ]
-  - [ export, LANG=en_US.UTF-8 ]
-  - [ export, LC_ALL=en_US.UTF-8 ]
   # Bug: setting hostname and domain does not work.
   #- [ hostname, "${fqdn}" ]
 # On first boot:

@@ -65,6 +65,7 @@ packages:
   - pigz
   - tmux
   - tcpdump
+  - net-tools
   - bind9-dnsutils
   - wget
   - curl
@@ -111,9 +112,6 @@ bootcmd:
   - [ apt, update ]
   - [ apt, upgrade, -y ]
   - [ apt, clean ]
-  - [ export, LANGUAGE=en_US.UTF-8 ]
-  - [ export, LANG=en_US.UTF-8 ]
-  - [ export, LC_ALL=en_US.UTF-8 ]
   # Bug: NFS4 would not mount rw on /data/read-write. Do it manually.
   - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
   # Bug: setting hostname and domain does not work.
