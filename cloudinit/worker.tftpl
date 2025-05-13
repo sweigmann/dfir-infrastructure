@@ -65,8 +65,8 @@ write_files:
         echo "Timesketch Status: `docker inspect -f {{.State.Health.Status}} timesketch-web`";
         sleep 1;
       done;
-      docker-compose exec timesketch-web tsctl create-user "${ts_admuser}" --password "${ts_admpass}" && docker-compose exec timesketch-web tsctl make-admin "${ts_admuser}" && echo "timesketch admin user created"
-      docker-compose exec timesketch-web tsctl create-user "${ts_user}" --password "${ts_pass}" && echo "timesketch normal user created"
+      docker compose exec timesketch-web tsctl create-user "${ts_admuser}" --password "${ts_admpass}" && docker compose exec timesketch-web tsctl make-admin "${ts_admuser}" && echo "timesketch admin user ${ts_admuser} created"
+      docker compose exec timesketch-web tsctl create-user "${ts_user}" --password "${ts_pass}" && echo "timesketch user ${ts_user} created"
   - path: /tmp/docker-compose.yml
     permissions: '0644'
     owner: 'root:root'
@@ -108,11 +108,6 @@ packages:
   - command-not-found
   - gnupg2
   - software-properties-common
-  - python3-podman
-  - podman-toolbox
-  - podman-docker
-  - podman-compose
-  - podman
   - pipx
   - python3-dev
   - build-essential
@@ -164,39 +159,42 @@ bootcmd:
     # Bug: setting hostname and domain does not work.
   #- [ hostname, "${fqdn}" ]
   # Start Timesketch containers
-  - [ cd, /data/srv/timesketch ]
-  - [ docker-compose, up, -d ]
   - [ cd, /data/srv/notebook ]
-  - [ docker-compose, up, -d ]
+  - [ docker, compose, up, -d ]
+  - [ cd, /data/srv/timesketch ]
+  - [ docker, compose, up, -d ]
   - [ cd ]
 # On first boot, do
 runcmd:
+  # Configure the NFS4 service
   #- [ chown, -R, root:dfir, /data ]
-  #- [ chmod, 2775, /data ]
+  #- [ chmod, '2775', /data ]
   - [ chown, -R, nobody:dfir, /data ]
-  - [ chmod, 2777, /data ]
+  - [ chmod, '2777', /data ]
   - [ mkdir, /data/read-only ]
   - [ mkdir, /data/read-write ]
   - [ chown, -R, root:dfir, /data/read-only ]
   - [ chown, -R, root:dfir, /data/read-write ]
-  - [ chmod, 2775, /data/read-only ]
-  - [ chmod, 2775, /data/read-write ]
+  - [ chmod, '2775', /data/read-only ]
+  - [ chmod, '2775', /data/read-write ]
   - [ sed, -i, -e, 's/^RPCMOUNTDOPTS=.*$/RPCNFSDOPTS="-N 2 -N 3"\nRPCMOUNTDOPTS="--manage-gids -N 2 -N 3"/g', /etc/default/nfs-kernel-server ]
   - [ exportfs, -rav ]
   - [ apt, update ]
   - [ apt-file, update ]
   - [ update-command-not-found ]
+  # Install Docker
+  - [ curl, -fsSL, https://get.docker.com, -o, get-docker.sh ]
+  - [ sh, ./get-docker.sh ]
   # Set up Timesketch
   - [ touch, /etc/containers/nodocker ]
   - [ useradd, --system, --shell, /usr/sbin/nologin, timesketch ]
   - [ mkdir, /data/srv ]
   - [ cd, /data/srv ]
   - [ curl, -s, -O , https://raw.githubusercontent.com/google/timesketch/master/contrib/deploy_timesketch.sh ]
-  - [ sed, -i, 's/docker compose/docker-compose/g', deploy_timesketch.sh ]
   - [ sed, -i, 's/^chown 1000 /chown timesketch:timesketch /g', deploy_timesketch.sh ]
   - [ sed, -i, 's/^START_CONTAINER=/START_CONTAINER=yes/', deploy_timesketch.sh ]
   - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]
-  - [ chmod, 755, deploy_timesketch.sh ]
+  - [ chmod, '755', deploy_timesketch.sh ]
   - [ ./deploy_timesketch.sh ]
   - [ mv, /tmp/create_timesketch_users.sh, /data/srv/timesketch/ ]
   - [ cd, /data/srv/timesketch/ ]
@@ -206,9 +204,9 @@ runcmd:
   - [ mv, /tmp/docker-compose.yml, /data/srv/notebook/ ]
   - [ mkdir, /data/srv/timesketch/data/notebook ]
   - [ chown, -R, timesketch:timesketch, /data/srv/timesketch/data/notebook ]
-  - [ chmod, 777, /data/srv/timesketch/data/notebook/ ]
+  - [ chmod, '777', /data/srv/timesketch/data/notebook/ ]
   - [ cd, /data/srv/notebook ]
-  - [ docker-compose, up, -d ]
+  - [ docker, compose, up, -d ]
   - [ cd ]
   #- [ pipx, install, git+https://github.com/log2timeline/plaso.git@20241006 ]
   - [ /sbin/reboot ]
