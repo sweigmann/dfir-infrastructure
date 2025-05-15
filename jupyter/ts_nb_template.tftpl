@@ -1,0 +1,204 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "ea15e911",
+   "metadata": {},
+   "source": [
+    "# ${case_id} -- Timesketch Notebook\n",
+    "This is a base notebook for connecting to a dev instance of Timesketch.\n",
+    "**Remember to rename the notebook**.\n",
+    "## Guides\n",
+    "* [Timesketch Collab Quickstart](https://colab.research.google.com/github/google/timesketch/blob/master/notebooks/colab-timesketch-demo.ipynb)\n",
+    "* [Jupyter Notebook Tutorial](https://www.dataquest.io/blog/jupyter-notebook-tutorial/)\n",
+    "* [How to Use Jupyter Notebooks: The Ultimate Guide](https://www.datacamp.com/tutorial/tutorial-jupyter-notebook)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d84b8e95",
+   "metadata": {},
+   "source": [
+    "## Import\n",
+    "To start a notebook we import few base libraries.\n",
+    "Execute the cell below by pressing the play button or using \"shift + enter\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fb43888f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# @title Import Libraries\n",
+    "# @markdown We first need to import libraries that we will use throughout the colab.\n",
+    "import sys\n",
+    "import altair as alt # For graphing.\n",
+    "import numpy as np   # Never know when this will come in handy.\n",
+    "import pandas as pd  # We will be using pandas quite heavily.\n",
+    "\n",
+    "from timesketch_api_client import search\n",
+    "from timesketch_api_client import config\n",
+    "from timesketch_api_client import client\n",
+    "from picatrix.lib import state as state_lib\n",
+    "\n",
+    "state = state_lib.state()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d37a1083",
+   "metadata": {},
+   "source": [
+    "## Connect to Timesketch"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a528b3a0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ts_client = client.TimesketchApi(\n",
+    "    host_uri='http://${fqdn}', \n",
+    "    username='${ts_user}', \n",
+    "    password='${ts_pass}'\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0085304d",
+   "metadata": {},
+   "source": [
+    "### Software Versions\n",
+    "The cell below will present you the versions of software in use."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "102a86e8",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# @title Software Versions\n",
+    "# @markdown Python\n",
+    "print(\"Python...\\nPython %s\\n\" % sys.version)\n",
+    "# @markdown Timesketch API Client\n",
+    "print(\"Timesketch API Client...\\n%s\\n\" % ts_client.version)\n",
+    "# @markdown Jupyter\n",
+    "!jupyter --version"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "052397cd",
+   "metadata": {},
+   "source": [
+    "## Sketches\n",
+    "### List Sketches"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ee12df29",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "list_sketches = list(ts_client.list_sketches())\n",
+    "print(\"There are %d sketches available:\" % len(list_sketches))\n",
+    "for s in ts_client.list_sketches():\n",
+    "    print(\"sketch.id:          %s\" % s.id)\n",
+    "    print(\"sketch.name:        %s\" % s.name)\n",
+    "    print(\"sketch.description: %s\" % s.description)\n",
+    "#  print('[{0:d}] {1:s} <{2:s}>'.format(sketch.id, sketch.name, sketch.description))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c766e746",
+   "metadata": {},
+   "source": [
+    "### Select a Sketch\n",
+    "Now it is time to select a sketch to use."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0dcbf51b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sketch = list_sketches[0]\n",
+    "print(\"Using Sketch number: %d\" % sketch.id)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2f493e66",
+   "metadata": {},
+   "source": [
+    "*If you want to query data you can use the snippets menu, or create a search obj, and to display a table use `display_table(search_obj.table)` or `display_table(data_frame)`*\n",
+    "\n",
+    "To see a list of available helper functions run `%picatrixhelpers` in a cell, or to see a list of functions/magics use `%picatrixmagics`."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1da04ed5",
+   "metadata": {},
+   "source": [
+    "## Searching"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5d06fc73",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "search = search.Search(sketch)\n",
+    "# TODO..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9c8d32aa",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

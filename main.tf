@@ -18,7 +18,8 @@ provider "libvirt" {
 # Random Strings for later use
 resource "random_string" "random_tsadm_pass" {
   keepers = {
-    first = "${timestamp()}"
+    #first = "${timestamp()}"
+    first = "${libvirt_volume.worker_data.id}"
   }
   length  = 10
   special = false
@@ -26,7 +27,8 @@ resource "random_string" "random_tsadm_pass" {
 }
 resource "random_string" "random_tsusr_pass" {
   keepers = {
-    first = "${timestamp()}"
+    #first = "${timestamp()}"
+    first = "${libvirt_volume.worker_data.id}"
   }
   length  = 10
   special = false
@@ -53,7 +55,7 @@ locals {
   # Timesketch config
   timesketch_admuser = "tsadm"
   timesketch_admpass = random_string.random_tsadm_pass.result
-  timesketch_user = var.user_config.username
+  timesketch_user = "dfir"
   timesketch_pass = random_string.random_tsusr_pass.result
 }
 #
@@ -353,10 +355,26 @@ data "cloudinit_config" "user_data_worker" {
         usergecos       = var.user_config.usergecos
         password        = var.user_config.password
         ssh_key         = var.user_config.ssh_key
+        case_id         = local.case_id
         ts_admuser      = local.timesketch_admuser
         ts_admpass      = local.timesketch_admpass
         ts_user         = local.timesketch_user
         ts_pass         = local.timesketch_pass
+        ts_version      = var.software_tags.timesketch
+        ts_nb_version   = var.software_tags.ts_notebook
+        plaso_version   = var.software_tags.plaso
+      }
+    )
+  }
+  part {
+    filename      = "timesketch_template.ipynb"
+    content = templatefile(
+      "${path.module}/jupyter/ts_nb_template.tftpl",
+      {
+        fqdn          = local.fqdn_worker
+        case_id       = local.case_id
+        ts_user       = local.timesketch_user
+        ts_pass       = local.timesketch_pass
       }
     )
   }
@@ -385,7 +403,7 @@ resource "libvirt_volume" "worker_root" {
 }
 # worker data volume -- 100G
 resource "libvirt_volume" "worker_data" {
-  name = "worker-data.qcow2"
+  name = "worker-data_${formatdate("YYYYMMDDhhmmss", timestamp())}.qcow2"
   format = "qcow2"
   size = 100000000000
   pool = libvirt_pool.case_pool.name

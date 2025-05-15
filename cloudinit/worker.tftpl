@@ -75,12 +75,63 @@ write_files:
       services:
         notebook:
           container_name: notebook
-          image: us-docker.pkg.dev/osdfir-registry/timesketch/notebook:latest
+          image: us-docker.pkg.dev/osdfir-registry/timesketch/notebook@${ts_nb_version}
           ports:
             - 8844:8844
           restart: on-failure
           volumes:
             - /data/srv/timesketch/data/notebook/:/usr/local/src/picadata/
+  - path: '/etc/systemd/system/docker-compose@.service'
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      # Credits: https://gist.github.com/mosquito/b23e1c1e5723a7fd9e6568e5cf91180f
+      [Unit]
+      Description=%i service with docker compose
+      PartOf=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      WorkingDirectory=/etc/docker/compose/%i
+      ExecStart=/usr/bin/docker compose up -d --remove-orphans
+      ExecStop=/usr/bin/docker compose down
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/docker-cleanup.timer
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      # Credits: https://gist.github.com/mosquito/b23e1c1e5723a7fd9e6568e5cf91180f
+      [Unit]
+      Description=Docker cleanup timer
+
+      [Timer]
+      OnUnitInactiveSec=12h
+
+      [Install]
+      WantedBy=timers.target
+  - path: /etc/systemd/system/docker-cleanup.service
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      # Credits: https://gist.github.com/mosquito/b23e1c1e5723a7fd9e6568e5cf91180f
+      [Unit]
+      Description=Docker cleanup
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      WorkingDirectory=/tmp
+      User=root
+      Group=root
+      ExecStart=/usr/bin/docker system prune -af
+
+      [Install]
+      WantedBy=multi-user.target
 # Update apt database and packages on first boot
 package_update: true
 package_upgrade: true
@@ -108,20 +159,31 @@ packages:
   - command-not-found
   - gnupg2
   - software-properties-common
+  - mpack
   - pipx
   - python3-dev
+  - python3-pip
   - build-essential
   - automake
   - autoconf
   - libtool
   - nfs-kernel-server
   - nfswatch
-# Groups
+# Users
+#   First user with ID 1000 -- needed for Docker.
+#   To enforce identic UIDs and GIDs for other users,
+#   we just create them all the same on all nodes.
 groups:
   - dfir
-# Users
 users:
   - default
+  - name: dfir
+    gecos: 'DFIR service account with UID 1000'
+    primary_group: dfir
+    uid: 1000
+    lock_passwd: true
+    shell: /bin/bash
+    passwd: ${password}
   - name: ${username}
     gecos: ${usergecos}
     primary_group: ${username}
@@ -156,19 +218,12 @@ bootcmd:
   - [ apt, update ]
   - [ apt, upgrade, -y ]
   - [ apt, clean ]
-    # Bug: setting hostname and domain does not work.
-  #- [ hostname, "${fqdn}" ]
   # Start Timesketch containers
-  - [ cd, /data/srv/notebook ]
-  - [ docker, compose, up, -d ]
-  - [ cd, /data/srv/timesketch ]
-  - [ docker, compose, up, -d ]
-  - [ cd ]
+  #- [ systemctl, start, docker-compose@timesketch ]
+  #- [ systemctl, start, docker-compose@notebook ]
 # On first boot, do
 runcmd:
   # Configure the NFS4 service
-  #- [ chown, -R, root:dfir, /data ]
-  #- [ chmod, '2775', /data ]
   - [ chown, -R, nobody:dfir, /data ]
   - [ chmod, '2777', /data ]
   - [ mkdir, /data/read-only ]
@@ -183,15 +238,20 @@ runcmd:
   - [ apt-file, update ]
   - [ update-command-not-found ]
   # Install Docker
+  - [ mkdir, -p, /data/srv/docker ]
+  - [ chmod, '0710', /data/srv/docker ]
+  - [ ln, -s, /data/srv/docker, /var/lib/docker ]
+  - [ cd, /data/srv ]
   - [ curl, -fsSL, https://get.docker.com, -o, get-docker.sh ]
   - [ sh, ./get-docker.sh ]
   # Set up Timesketch
-  - [ touch, /etc/containers/nodocker ]
-  - [ useradd, --system, --shell, /usr/sbin/nologin, timesketch ]
-  - [ mkdir, /data/srv ]
   - [ cd, /data/srv ]
-  - [ curl, -s, -O , https://raw.githubusercontent.com/google/timesketch/master/contrib/deploy_timesketch.sh ]
-  - [ sed, -i, 's/^chown 1000 /chown timesketch:timesketch /g', deploy_timesketch.sh ]
+  - [ curl, -s, -O ,https://raw.githubusercontent.com/google/timesketch/master/contrib/deploy_timesketch.sh ]
+  - [ sed, -i, 's/^chown 1000 /chown 1000:1000 /g', deploy_timesketch.sh ]
+  # Select a specific version of Timesketch
+  # Timesketch version must be compatible with notebook!
+  - [ sed, -i, 's#^OPENSEARCH_MEM_USE_GB=.*#OPENSEARCH_MEM_USE_GB=8#', deploy_timesketch.sh ]
+  - [ sed, -i, 's#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/master"#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/${ts_version}"#', deploy_timesketch.sh ]
   - [ sed, -i, 's/^START_CONTAINER=/START_CONTAINER=yes/', deploy_timesketch.sh ]
   - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]
   - [ chmod, '755', deploy_timesketch.sh ]
@@ -203,10 +263,31 @@ runcmd:
   - [ mkdir, /data/srv/notebook ]
   - [ mv, /tmp/docker-compose.yml, /data/srv/notebook/ ]
   - [ mkdir, /data/srv/timesketch/data/notebook ]
-  - [ chown, -R, timesketch:timesketch, /data/srv/timesketch/data/notebook ]
-  - [ chmod, '777', /data/srv/timesketch/data/notebook/ ]
+  - [ chown, -R, '1000:1000', /data/srv/timesketch/data/notebook ]
+  - [ chmod, '0777', /data/srv/timesketch/data/notebook/ ]
+  - [ cd, /root/ ]
+  - [ munpack, -f, /var/lib/cloud/instance/user-data.txt.i ]
+  - [ cp, timesketch_template.ipynb, /data/srv/timesketch/data/notebook/timesketch_template.ipynb ]
+  - [ chmod, '0644', /data/srv/timesketch/data/notebook/timesketch_template.ipynb ]
   - [ cd, /data/srv/notebook ]
   - [ docker, compose, up, -d ]
   - [ cd ]
-  #- [ pipx, install, git+https://github.com/log2timeline/plaso.git@20241006 ]
+  # Set up systemd services for Docker containers
+  - [ mkdir, -p, /etc/docker/compose ]
+  - [ ln, -s, /data/srv/timesketch, /etc/docker/compose/ ]
+  - [ ln, -s, /data/srv/notebook, /etc/docker/compose/ ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, docker-cleanup.timer ]
+  - [ systemctl, enable, docker-compose@timesketch ]
+  - [ systemctl, enable, docker-compose@notebook ]
+  # Install Plaso
+  - [ su, -l, dfir, -c, 'pipx install git+https://github.com/log2timeline/plaso.git@${plaso_version}' ]
+  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/image_export, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/log2timeline, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/pinfo, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/psort, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/psteal, /usr/local/bin/ ]
+  # Copying does not work. It fails as there would be no files to copy.
+  #- [ cp, -a, /home/dfir/.local/bin/*, /usr/local/bin/ ]
+  # Reboot
   - [ /sbin/reboot ]

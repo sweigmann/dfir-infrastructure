@@ -103,3 +103,19 @@ variable "case_network" {
     network_cidr = "24"
   }
 }
+#
+#
+# Tags and versions for software
+variable "software_tags" {
+  description = "Tags and versions for software to be installed"
+  type = object({
+    plaso = string
+    timesketch = string
+    ts_notebook = string
+  })
+  default = {
+    plaso         = "20241006"
+    timesketch    = "20241129"
+    ts_notebook   = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+  }
+}

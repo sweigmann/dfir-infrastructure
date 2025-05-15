@@ -86,12 +86,21 @@ packages:
   - nfswatch
   # Not yet available to Debian stable...
   #- rustup
-# Groups
+# Users
+#   First user with ID 1000 -- needed for Docker.
+#   To enforce identic UIDs and GIDs for other users,
+#   we just create them all the same on all nodes.
 groups:
   - dfir
-# Users
 users:
   - default
+  - name: dfir
+    gecos: 'DFIR service account with UID 1000'
+    primary_group: dfir
+    uid: 1000
+    lock_passwd: true
+    shell: /bin/bash
+    passwd: ${password}
   - name: ${username}
     gecos: ${usergecos}
     primary_group: ${username}
@@ -108,14 +117,15 @@ mounts:
   - [ "${worker_addr}:/read-only", /data/read-only, nfs, "defaults,ro,nofail", "0", "0" ]
   - [ "${worker_addr}:/read-write", /data/read-write, nfs, "defaults,rw,nofail", "0", "0" ]
 # On each boot, do
+#   Bug: NFS4 would not mount rw on /data/read-write. Do it manually.
+# - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
+#   Bug: setting hostname and domain does not work.
+# - [ hostname, "${fqdn}" ]
 bootcmd:
   - [ apt, update ]
   - [ apt, upgrade, -y ]
   - [ apt, clean ]
-  # Bug: NFS4 would not mount rw on /data/read-write. Do it manually.
   - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
-  # Bug: setting hostname and domain does not work.
-  #- [ hostname, "${fqdn}" ]
 # On first boot, do
 runcmd:
   #- [ chown, -R, root:dfir, /data ]
