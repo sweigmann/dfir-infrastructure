@@ -15,27 +15,6 @@ provider "libvirt" {
 }
 #
 #
-# Random Strings for later use
-resource "random_string" "random_tsadm_pass" {
-  keepers = {
-    #first = "${timestamp()}"
-    first = "${libvirt_volume.worker_data.id}"
-  }
-  length  = 10
-  special = false
-  upper   = true
-}
-resource "random_string" "random_tsusr_pass" {
-  keepers = {
-    #first = "${timestamp()}"
-    first = "${libvirt_volume.worker_data.id}"
-  }
-  length  = 10
-  special = false
-  upper   = true
-}
-#
-#
 # Local Variables
 locals {
   case_id = "${var.case_config.type}-${var.case_config.code}-${var.case_config.date}"
@@ -57,6 +36,38 @@ locals {
   timesketch_admpass = random_string.random_tsadm_pass.result
   timesketch_user = "dfir"
   timesketch_pass = random_string.random_tsusr_pass.result
+  # Users
+  users_case_vms = jsondecode(file("${path.module}/users-case-vms.json"))
+  users_gateway = jsondecode(file("${path.module}/users-gateway.json"))
+
+}
+#
+#
+# Random Strings for later use
+#
+# These resources will only be rebuild when the Terraform/Tofu
+# state file is reset or deleted.
+# We cannot set the keepers to the worker node itself or the
+# cloud-init disks as this would introduce deduction circles.
+# The Case ID is used instead, making the randomized values
+# independent from any case infrastructure.
+resource "random_string" "random_tsadm_pass" {
+  keepers = {
+    #first = "${timestamp()}"
+    first = local.case_id
+  }
+  length  = 20
+  special = false
+  upper   = true
+}
+resource "random_string" "random_tsusr_pass" {
+  keepers = {
+  #  first = "${timestamp()}"
+    first = local.case_id
+  }
+  length  = 20
+  special = false
+  upper   = true
 }
 #
 #
@@ -71,6 +82,15 @@ resource "libvirt_pool" "base_pool" {
   }
 }
 #
+# Bastion Pool
+resource "libvirt_pool" "bastion_pool" {
+  name = "bastion_hosts"
+  type = "dir"
+  target {
+    path = var.bastion_pool_config.base_path
+  }
+}
+#
 # DFIR Pool
 resource "libvirt_pool" "case_pool" {
   name = local.case_id
@@ -81,16 +101,16 @@ resource "libvirt_pool" "case_pool" {
 }
 #
 # Configure QCOW2 image sources
-resource "libvirt_volume" "debian_12" {
-  name = "debian-12-generic-amd64.qcow2"
-  format = "qcow2"
-  source = "http://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+resource "libvirt_volume" "debian" {
+  name = "debian-${var.base_image_debian.release}-generic-amd64.${var.base_image_debian.format}"
+  format = var.base_image_debian.format
+  source = var.base_image_debian.source
   pool = libvirt_pool.base_pool.name
 }
 resource "libvirt_volume" "alpine" {
-  name = "alpine-3.21.2-x86_64.qcow2"
-  format = "qcow2"
-  source = "http://dl-cdn.alpinelinux.org/alpine/v3.21/releases/cloud/generic_alpine-3.21.2-x86_64-bios-cloudinit-r0.qcow2"
+  name = "alpine-${var.base_image_alpine.release}-x86_64.${var.base_image_alpine.format}"
+  format = var.base_image_alpine.format
+  source = var.base_image_alpine.source
   pool = libvirt_pool.base_pool.name
 }
 #
@@ -171,6 +191,7 @@ resource "time_sleep" "wait_for_worker" {
   depends_on =  [ libvirt_domain.worker ]
   create_duration = "360s"
 }
+#
 # gateway init
 data "cloudinit_config" "user_data_gateway" {
   # https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/config
@@ -184,18 +205,14 @@ data "cloudinit_config" "user_data_gateway" {
       {
         hostname        = "gateway-${local.case_id}"
         fqdn            = local.fqdn_gateway
-        distro_release  = "v3.21"
-        #distro_release  = "latest-stable"
+        distro_release  = var.base_image_alpine.release
         nameserver      = var.access_network.external_dns
         internal_domain = local.case_network_domain
         internal_dns    = local.case_network_localdns
         internal_net    = var.case_network.network_addr
         internal_addr   = local.case_network_gateway
         internal_cidr   = var.case_network.network_cidr
-        username        = var.user_config.username
-        usergecos       = var.user_config.usergecos
-        password        = var.user_config.password
-        ssh_key         = var.user_config.ssh_key
+        users           = local.users_gateway
       }
     )
   }
@@ -203,14 +220,13 @@ data "cloudinit_config" "user_data_gateway" {
 resource "libvirt_cloudinit_disk" "cloudinit_gateway" {
   name            = "cloudinit_gateway.iso"
   user_data       = data.cloudinit_config.user_data_gateway.rendered
-  #network_config  = data.template_file.network_config.rendered
   pool            = libvirt_pool.case_pool.name
 }
-# gateway root volume -- 2G
+# gateway root volume
 resource "libvirt_volume" "gateway_root" {
   name = "gateway-root.qcow2"
   format = "qcow2"
-  size = 2000000000
+  size = var.volume_size.gateway_root
   pool = libvirt_pool.case_pool.name
   base_volume_id = libvirt_volume.alpine.id
   base_volume_pool = libvirt_pool.base_pool.name
@@ -265,38 +281,27 @@ data "cloudinit_config" "user_data_bastion" {
       {
         hostname        = "bastion"
         fqdn            = local.fqdn_bastion
-        distro_release  = "bookworm"
+        distro_release  = var.base_image_debian.release
         gateway_addr    = local.access_network_gateway
         internal_net    = var.case_network.network_addr
         internal_cidr   = var.case_network.network_cidr
-        username        = var.user_config.username
-        usergecos       = var.user_config.usergecos
-        password        = var.user_config.password
-        ssh_key         = var.user_config.ssh_key
+        users           = local.users_case_vms
       }
     )
   }
 }
-#data "couldinit_config" "meta_data_bastion" {
-#  gzip            = false
-#  base64_encode   = false
-#  part {
-#    filename      = "meta-data.yaml"
-#  }
-#}
 resource "libvirt_cloudinit_disk" "cloudinit_bastion" {
   name            = "cloudinit_bastion.iso"
   user_data       = data.cloudinit_config.user_data_bastion.rendered
-  #network_config  = data.template_file.network_config.rendered
-  pool            = libvirt_pool.case_pool.name
+  pool            = libvirt_pool.bastion_pool.name
 }
-# bastion root volume -- 4G
+# bastion root volume
 resource "libvirt_volume" "bastion_root" {
   name = "bastion-root.qcow2"
   format = "qcow2"
-  size = 4000000000
-  pool = libvirt_pool.case_pool.name
-  base_volume_id = libvirt_volume.debian_12.id
+  size = var.volume_size.bastion_root
+  pool = libvirt_pool.bastion_pool.name
+  base_volume_id = libvirt_volume.debian.id
   base_volume_pool = libvirt_pool.base_pool.name
 }
 # bastion domain
@@ -348,21 +353,18 @@ data "cloudinit_config" "user_data_worker" {
       {
         hostname        = "worker"
         fqdn            = local.fqdn_worker
-        distro_release  = "bookworm"
+        distro_release  = var.base_image_debian.release
         internal_net    = var.case_network.network_addr
         internal_cidr   = var.case_network.network_cidr
-        username        = var.user_config.username
-        usergecos       = var.user_config.usergecos
-        password        = var.user_config.password
-        ssh_key         = var.user_config.ssh_key
+        users           = local.users_case_vms
         case_id         = local.case_id
         ts_admuser      = local.timesketch_admuser
         ts_admpass      = local.timesketch_admpass
         ts_user         = local.timesketch_user
         ts_pass         = local.timesketch_pass
-        ts_version      = var.software_tags.timesketch
-        ts_nb_version   = var.software_tags.ts_notebook
-        plaso_version   = var.software_tags.plaso
+        ts_version      = var.software_tag.timesketch
+        ts_nb_version   = var.software_tag.ts_notebook
+        plaso_version   = var.software_tag.plaso
       }
     )
   }
@@ -379,33 +381,25 @@ data "cloudinit_config" "user_data_worker" {
     )
   }
 }
-#data "couldinit_config" "meta_data_worker" {
-#  gzip            = false
-#  base64_encode   = false
-#  part {
-#    filename      = "meta-data.yaml"
-#  }
-#}
 resource "libvirt_cloudinit_disk" "cloudinit_worker" {
   name            = "cloudinit_worker.iso"
   user_data       = data.cloudinit_config.user_data_worker.rendered
-  #network_config  = data.template_file.network_config.rendered
   pool            = libvirt_pool.case_pool.name
 }
-# worker root volume -- 20G
+# worker root volume
 resource "libvirt_volume" "worker_root" {
   name = "worker-root.qcow2"
   format = "qcow2"
-  size = 20000000000
+  size = var.volume_size.worker_root
   pool = libvirt_pool.case_pool.name
-  base_volume_id = libvirt_volume.debian_12.id
+  base_volume_id = libvirt_volume.debian.id
   base_volume_pool = libvirt_pool.base_pool.name
 }
-# worker data volume -- 100G
+# worker data volume
 resource "libvirt_volume" "worker_data" {
-  name = "worker-data_${formatdate("YYYYMMDDhhmmss", timestamp())}.qcow2"
+  name = "worker-data.qcow2"
   format = "qcow2"
-  size = 100000000000
+  size = var.volume_size.worker_data
   pool = libvirt_pool.case_pool.name
 }
 # worker domain
@@ -416,7 +410,8 @@ resource "libvirt_domain" "worker" {
     time_sleep.wait_for_gateway
   ]
   autostart = true
-  memory = "16384"
+  #memory = "16384"
+  memory = "24576"
   vcpu = 6
   cloudinit = libvirt_cloudinit_disk.cloudinit_worker.id
   cpu {
@@ -471,38 +466,27 @@ data "cloudinit_config" "user_data_siftstation" {
       {
         hostname        = "siftstation"
         fqdn            = local.fqdn_siftstation
-        distro_release  = "bookworm"
+        distro_release  = var.base_image_debian.release
         internal_net    = var.case_network.network_addr
         internal_cidr   = var.case_network.network_cidr
         worker_addr     = libvirt_domain.worker.network_interface.0.addresses.0
-        username        = var.user_config.username
-        usergecos       = var.user_config.usergecos
-        password        = var.user_config.password
-        ssh_key         = var.user_config.ssh_key
+        users           = local.users_case_vms
       }
     )
   }
 }
-#data "couldinit_config" "meta_data_siftstation" {
-#  gzip            = false
-#  base64_encode   = false
-#  part {
-#    filename      = "meta-data.yaml"
-#  }
-#}
 resource "libvirt_cloudinit_disk" "cloudinit_siftstation" {
   name            = "cloudinit_siftstation.iso"
   user_data       = data.cloudinit_config.user_data_siftstation.rendered
-  #network_config  = data.template_file.network_config.rendered
   pool            = libvirt_pool.case_pool.name
 }
-# siftstation root volume -- 10G
+# siftstation root volume
 resource "libvirt_volume" "siftstation_root" {
   name = "siftstation-root.qcow2"
   format = "qcow2"
-  size = 10000000000
+  size = var.volume_size.siftstation_root
   pool = libvirt_pool.case_pool.name
-  base_volume_id = libvirt_volume.debian_12.id
+  base_volume_id = libvirt_volume.debian.id
   base_volume_pool = libvirt_pool.base_pool.name
 }
 # siftstation domain

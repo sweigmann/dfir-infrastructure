@@ -1,0 +1,42 @@
+{
+"groups": [
+  "dfir"
+],
+"users": [
+  {
+    "_comment": "DO NOT DELETE OR RENAME THIS USER - at least opensearch depends on it...",
+    "name": "dfir",
+    "gecos": "DFIR service account with UID 1000",
+    "primary_group": "dfir",
+    "uid": 1000,
+    "lock_passwd": true,
+    "shell": "/bin/bash"
+  },
+  {
+    "_comment": "This is the first analyst user. Full admin privileges granted.",
+    "name": "user1",
+    "gecos": "User 1",
+    "primary_group": "user1",
+    "groups": [ "sudo", "adm", "dialout", "cdrom", "floppy", "audio", "dip", "video", "plugdev", "dfir" ],
+    "lock_passwd": false,
+    "passwd": "your-password-hash-goes-here",
+    "shell": "/bin/bash",
+    "ssh_authorized_keys": [
+      "ssh-ed25519 your-key-goes-here user@host"
+    ]
+  },
+  {
+    "_comment": "This is the second analyst user. This user has normal user privileges.",
+    "name": "user2",
+    "gecos": "User 2",
+    "primary_group": "user2",
+    "groups": [ "dfir" ],
+    "lock_passwd": false,
+    "passwd": "your-password-hash-goes-here",
+    "shell": "/bin/bash",
+    "ssh_authorized_keys": [
+      "ssh-ed25519 your-key-goes-here user@host"
+    ]
+  }
+]
+}

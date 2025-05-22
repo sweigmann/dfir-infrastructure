@@ -163,38 +163,19 @@ packages:
   - pipx
   - python3-dev
   - python3-pip
+  - python3-flor
   - build-essential
   - automake
   - autoconf
   - libtool
   - nfs-kernel-server
   - nfswatch
-# Users
+# Users and Groups
+#   Sourced from users-case-vms.json
 #   First user with ID 1000 -- needed for Docker.
 #   To enforce identic UIDs and GIDs for other users,
 #   we just create them all the same on all nodes.
-groups:
-  - dfir
-users:
-  - default
-  - name: dfir
-    gecos: 'DFIR service account with UID 1000'
-    primary_group: dfir
-    uid: 1000
-    lock_passwd: true
-    shell: /bin/bash
-    passwd: ${password}
-  - name: ${username}
-    gecos: ${usergecos}
-    primary_group: ${username}
-    groups:
-      - sudo
-      - dfir
-    lock_passwd: false
-    shell: /bin/bash
-    passwd: ${password}
-    ssh_authorized_keys:
-      - ${ssh_key}
+${replace(yamlencode("${users}"), "\"", "")}
 # Disks - prepare partition for case data
 device_aliases:
   worker_data: /dev/disk/by-id/wwn-0xb0bafe77600dda7a
@@ -250,7 +231,7 @@ runcmd:
   - [ sed, -i, 's/^chown 1000 /chown 1000:1000 /g', deploy_timesketch.sh ]
   # Select a specific version of Timesketch
   # Timesketch version must be compatible with notebook!
-  - [ sed, -i, 's#^OPENSEARCH_MEM_USE_GB=.*#OPENSEARCH_MEM_USE_GB=8#', deploy_timesketch.sh ]
+  - [ sed, -i, 's#^OPENSEARCH_MEM_USE_GB=.*#OPENSEARCH_MEM_USE_GB=10#', deploy_timesketch.sh ]
   - [ sed, -i, 's#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/master"#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/${ts_version}"#', deploy_timesketch.sh ]
   - [ sed, -i, 's/^START_CONTAINER=/START_CONTAINER=yes/', deploy_timesketch.sh ]
   - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]

@@ -84,32 +84,11 @@ packages:
 #  #maxsize: 10485760   # size in bytes
 #  # Set SWAP space to a fixed size of 512M
 #  size: 536870912
-# Users
-#   First user with ID 1000 -- needed for Docker.
+# Users and Groups
+#   Sourced from users-case-vms.json
 #   To enforce identic UIDs and GIDs for other users,
 #   we just create them all the same on all nodes.
-groups:
-  - dfir
-users:
-  - default
-  - name: dfir
-    gecos: 'DFIR service account with UID 1000'
-    primary_group: dfir
-    uid: 1000
-    lock_passwd: true
-    shell: /bin/bash
-    passwd: ${password}
-  - name: ${username}
-    gecos: ${usergecos}
-    primary_group: ${username}
-    groups:
-      - sudo
-      - dfir
-    lock_passwd: false
-    shell: /bin/bash
-    passwd: ${password}
-    ssh_authorized_keys:
-      - ${ssh_key}
+${replace(yamlencode("${users}"), "\"", "")}
 # On every boot:
 bootcmd:
   - [ apt, update ]

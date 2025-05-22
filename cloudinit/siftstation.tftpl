@@ -86,32 +86,11 @@ packages:
   - nfswatch
   # Not yet available to Debian stable...
   #- rustup
-# Users
-#   First user with ID 1000 -- needed for Docker.
+# Users and Groups
+#   Sourced from users-case-vms.json
 #   To enforce identic UIDs and GIDs for other users,
 #   we just create them all the same on all nodes.
-groups:
-  - dfir
-users:
-  - default
-  - name: dfir
-    gecos: 'DFIR service account with UID 1000'
-    primary_group: dfir
-    uid: 1000
-    lock_passwd: true
-    shell: /bin/bash
-    passwd: ${password}
-  - name: ${username}
-    gecos: ${usergecos}
-    primary_group: ${username}
-    groups:
-      - sudo
-      - dfir
-    lock_passwd: false
-    shell: /bin/bash
-    passwd: ${password}
-    ssh_authorized_keys:
-      - ${ssh_key}
+${replace(yamlencode("${users}"), "\"", "")}
 # Disks - Mount NFS shares from the worker node
 mounts:
   - [ "${worker_addr}:/read-only", /data/read-only, nfs, "defaults,ro,nofail", "0", "0" ]
@@ -141,4 +120,5 @@ runcmd:
   - [ apt, update ]
   - [ apt-file, update ]
   - [ update-command-not-found ]
+  - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
   - [ /sbin/reboot ]

@@ -158,16 +158,8 @@ write_files:
 #  # Set SWAP space to a fixed size of 100M
 #  size: 104857600
 # Users
-users:
-  - default
-  - name: ${username}
-    gecos: ${usergecos}
-    primary_group: ${username}
-    groups: wheel, sudo
-    lock_passwd: false
-    passwd: ${password}
-    ssh_authorized_keys:
-      - ${ssh_key}
+#   Sourced from users-gateway.json
+${replace(yamlencode("${users}"), "\"", "")}
 # On each boot, do
 bootcmd:
   - [ apk, upgrade, --update-cache, --available ]

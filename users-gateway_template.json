@@ -1,0 +1,16 @@
+{
+"users": [
+  {
+    "_comment": "Gateway admin user with full privileges.",
+    "name": "gwadmin",
+    "gecos": "Gateway Admin",
+    "primary_group": "gwadmin",
+    "groups": [ "wheel" ],
+    "lock_passwd": false,
+    "passwd": "your-password-hash-goes-here",
+    "ssh_authorized_keys": [
+      "ssh-ed25519 your-key-goes-here user@host"
+    ]
+  }
+]
+}
