@@ -26,12 +26,7 @@ case_config = {
 # User Config
 # generate a password like this:
 # echo -en "passw0rd" | mkpasswd -m sha512crypt --stdin
-user_config = {
-  username  = "dfir-user"
-  usergecos = "DFIR user"
-  password  = "$6$GjmdsnrKG02hsWmz$H7b17il3X0qNp7SdC.0Rj1dZijz7OSENz6NtRLVsnAJqeVE.Bf.YW5Y0yCFSEhbe5mcIa2Pd0LQ86jAduI73S."
-  ssh_key   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEcqdebJG6shtN9g6nxeDFQxkqLnJ2q7/wMM5eK11U0o dfir-user@laptop"
-}
+# CONFIGURE USERS IN `users-gateway.json` AND `users-case-vms.json`!
 #
 #
 # Network Configs
@@ -47,7 +42,26 @@ access_network = {
 # Case Network
 case_network = {
   network_addr  = "10.10.10.0/24"
-  nework_cidr   = "24"
+  network_cidr   = "24"
+}
+#
+#
+# Tags and versions for software
+software_tag = {
+  plaso         = "20241006"
+  timesketch    = "20241129"
+  # Notebook build datetime: Dec 19, 2024, 3:40:20 PM
+  ts_notebook   = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+}
+#
+#
+# Volume sizes (in Bytes)
+volume_size = {
+  bastion_root = 4000000000
+  gateway_root = 2000000000
+  worker_root = 20000000000
+  worker_data = 150000000000
+  siftstation_root = 10000000000
 }
 #
 #
@@ -61,6 +75,11 @@ case_network = {
 base_pool_config = {
   name = "base_images"
   path = "/var/lib/libvirt/images/base_images"
+}
+# Bastion Pool
+bastion_pool_config = {
+  name = "bastion_images"
+  base_path = "/var/lib/libvirt/images/bastion"
 }
 # DFIR Pool
 dfir_pool_config = {
