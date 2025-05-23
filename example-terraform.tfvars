@@ -41,26 +41,26 @@ access_network = {
 }
 # Case Network
 case_network = {
-  network_addr  = "10.10.10.0/24"
-  network_cidr   = "24"
+  network_addr = "10.10.10.0/24"
+  network_cidr = "24"
 }
 #
 #
 # Tags and versions for software
 software_tag = {
-  plaso         = "20241006"
-  timesketch    = "20241129"
+  plaso      = "20241006"
+  timesketch = "20241129"
   # Notebook build datetime: Dec 19, 2024, 3:40:20 PM
-  ts_notebook   = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+  ts_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
 }
 #
 #
 # Volume sizes (in Bytes)
 volume_size = {
-  bastion_root = 4000000000
-  gateway_root = 2000000000
-  worker_root = 20000000000
-  worker_data = 150000000000
+  bastion_root     = 4000000000
+  gateway_root     = 2000000000
+  worker_root      = 20000000000
+  worker_data      = 150000000000
   siftstation_root = 10000000000
 }
 #
@@ -78,11 +78,11 @@ base_pool_config = {
 }
 # Bastion Pool
 bastion_pool_config = {
-  name = "bastion_images"
+  name      = "bastion_images"
   base_path = "/var/lib/libvirt/images/bastion"
 }
 # DFIR Pool
 dfir_pool_config = {
-  name = "dfir_images"
+  name      = "dfir_images"
   base_path = "/var/lib/libvirt/images/dfir"
 }
