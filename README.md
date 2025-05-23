@@ -2,6 +2,8 @@
 
 An infrastructure as code, written for OpenTOFU / Terraform, based on QEMU/KVM. This project is purely based on OpenSource software.
 
+<img src="https://github.com/sweigmann/dfir-infrastructure/actions/workflows/terraform.yml/badge.svg?branch=main">
+
 ## Overview
 
 ![Incident Response Analysis Infrastructure -- Overview](docs/overview.png)

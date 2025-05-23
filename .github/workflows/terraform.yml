@@ -12,6 +12,19 @@ jobs:
   terraform-plan:
     runs-on: ubuntu-latest
     steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+          libvirt-daemon \
+          libvirt-daemon-driver-qemu \
+          libvirt-daemon-system \
+          libvirt-daemon-system-systemd \
+          qemu-system-x86 \
+          qemu-utils
+        sudo setfacl --modify user:${USER}:rw /var/run/libvirt/libvirt-sock
+        sudo usermod -aG libvirt ${USER}
+        sudo usermod -aG kvm ${USER}
+        sudo newgrp libvirt
     - name: Checkout Code
       uses: actions/checkout@v4
     - name: Setup Terraform

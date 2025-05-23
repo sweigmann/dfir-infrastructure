@@ -2,3 +2,6 @@
 *.tfvars
 *.tfstate*
 *.tfvars.bk
+terraform.tfvars
+users-case-vms.json
+users-gateway.json

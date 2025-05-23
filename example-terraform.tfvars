@@ -11,7 +11,7 @@
 libvirt_config = {
   name = "dfirhost"
   #uri  = "qemu+ssh://kvmuser@dfirhost/system?keyfile=id_ecdsa"
-  uri  = "qemu:///system"
+  uri = "qemu:///system"
 }
 #
 #
