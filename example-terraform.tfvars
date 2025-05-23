@@ -41,7 +41,7 @@ access_network = {
 }
 # Case Network
 case_network = {
-  network_addr = "10.10.10.0/24"
+  network_addr = "10.10.10.0"
   network_cidr = "24"
 }
 #
