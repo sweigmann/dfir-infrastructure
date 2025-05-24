@@ -6,11 +6,12 @@ An infrastructure as code, written for OpenTOFU / Terraform, based on QEMU/KVM. 
 
 ## Overview
 
-![Incident Response Analysis Infrastructure -- Overview](docs/overview.png)
+<img src="docs/overview.png">
 
 ## Quickstart
 
 1. Have a machine ready running KVM
+1. Set up your internal gateway to forward requests for your internal DFIR DNS zone (example: `incident-responders.org`) to the KVM machine
 1. Clone this repository
 1. Adapt `terraform.tfvars` according to your needs
 1. `tofu init && tofu plan && tofu apply`

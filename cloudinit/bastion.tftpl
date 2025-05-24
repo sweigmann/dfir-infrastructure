@@ -5,18 +5,6 @@ fqdn: ${fqdn}
 growpart:
   mode: auto
   devices: ['/']
-# Configure APT
-# OUTDATED! Debian uses /etc/apt/sources.list.d/debian.sources which is not affected by sources_list
-#apt:
-#  sources_list: |
-#    deb http://ftp.de.debian.org/debian {{ v1.distro_release }} main contrib non-free
-#    #deb-src http://ftp.de.debian.org/debian {{ v1.distro_release }} main contrib non-free
-#    deb http://ftp.de.debian.org/debian {{ v1.distro_release }}-updates main contrib non-free
-#    #deb-src http://ftp.de.debian.org/debian {{ v1.distro_release }}-updates main contrib non-free
-#    deb http://security.debian.org/debian-security {{ v1.distro_release }}-security main contrib non-free
-#    #deb-src http://security.debian.org/debian-security {{ v1.distro_release }}-security main contrib non-free
-#    deb http://ftp.de.debian.org/debian {{ v1.distro_release }}-backports main contrib non-free
-#    #deb-src http://ftp.de.debian.org/debian {{ v1.distro_release }}-backports main contrib non-free
 # Write files to prepare:
 # * manually write debian.sources
 # * configure locales

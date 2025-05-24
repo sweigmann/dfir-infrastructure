@@ -8,6 +8,18 @@ terraform {
       source  = "dmacvicar/libvirt"
       version = ">=0.8.3"
     }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = ">=2.3.7"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = ">=0.13.1"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = ">=3.7.2"
+    }
   }
 }
 provider "libvirt" {
@@ -26,7 +38,7 @@ locals {
   case_network_dhcp_first = cidrhost("${var.case_network.network_addr}/${var.case_network.network_cidr}", 3)
   case_network_dhcp_last  = cidrhost("${var.case_network.network_addr}/${var.case_network.network_cidr}", 6)
   # FQDN for bastion differs as it lives within the access network
-  fqdn_bastion = "bastion.${var.access_network.domain}"
+  fqdn_bastion = "bastion-${local.case_id}.${var.access_network.domain}"
   # FQDNs for all other hosts which live within the case network
   fqdn_gateway     = "gateway.${local.case_network_domain}"
   fqdn_worker      = "worker.${local.case_network_domain}"
@@ -117,7 +129,7 @@ resource "libvirt_volume" "alpine" {
 #
 # Networks
 #
-# Access Network (Jump Hosts)
+# Access Network (Bastion Hosts)
 resource "libvirt_network" "access_network" {
   name      = "access-net"
   mode      = "route"
@@ -203,7 +215,7 @@ data "cloudinit_config" "user_data_gateway" {
     content = templatefile(
       "${path.module}/cloudinit/gateway.tftpl",
       {
-        hostname        = "gateway-${local.case_id}"
+        hostname        = "gateway"
         fqdn            = local.fqdn_gateway
         distro_release  = var.base_image_alpine.release
         nameserver      = var.access_network.external_dns
@@ -293,20 +305,20 @@ data "cloudinit_config" "user_data_bastion" {
 resource "libvirt_cloudinit_disk" "cloudinit_bastion" {
   name      = "cloudinit_bastion.iso"
   user_data = data.cloudinit_config.user_data_bastion.rendered
-  pool      = libvirt_pool.bastion_pool.name
+  pool      = libvirt_pool.case_pool.name
 }
 # bastion root volume
 resource "libvirt_volume" "bastion_root" {
   name             = "bastion-root.qcow2"
   format           = "qcow2"
   size             = var.volume_size.bastion_root
-  pool             = libvirt_pool.bastion_pool.name
+  pool             = libvirt_pool.case_pool.name
   base_volume_id   = libvirt_volume.debian.id
   base_volume_pool = libvirt_pool.base_pool.name
 }
 # bastion domain
 resource "libvirt_domain" "bastion" {
-  name      = "bastion"
+  name      = "${local.case_id}-bastion"
   autostart = true
   memory    = "1024"
   vcpu      = 1

@@ -5,22 +5,11 @@ fqdn: ${fqdn}
 growpart:
   mode: auto
   devices: ['/']
-# Configure APT
-# OUTDATED! Debian uses /etc/apt/sources.list.d/debian.sources which is not affected by sources_list
-#apt:
-#  sources_list: |
-#    deb http://deb.debian.org/debian $RELEASE main contrib non-free non-free-firmware
-#    #deb-src http://ftp.de.debian.org/debian $RELEASE main contrib non-free non-free-firmware
-#    deb http://deb.debian.org/debian $RELEASE-updates main contrib non-free non-free-firmware
-#    #deb-src http://deb.debian.org/debian $RELEASE-updates main contrib non-free non-free-firmware
-#    deb http://security.debian.org/debian-security $RELEASE-security main contrib non-free non-free-firmware
-#    #deb-src http://security.debian.org/debian-security $RELEASE-security main contrib non-free non-free-firmware
-#    deb http://deb.debian.org/debian $RELEASE-backports main contrib non-free non-free-firmware
-#    #deb-src http://deb.debian.org/debian $RELEASE-backports main contrib non-free non-free-firmware
 # Write files to prepare:
 # * manually write debian.sources
 # * configure NFS
 # * configure locales
+# * Write down some helpers for Timesketch
 write_files:
   - path: /etc/apt/sources.list.d/debian.sources
     permissions: '0644'
@@ -55,8 +44,7 @@ write_files:
       LC_MONETARY=de_DE.UTF-8
       LC_PAPER=de_DE.UTF-8
       LC_MEASUREMENT=de_DE.UTF-8
-  # Write down some helpers for Timesketch
-  - path: /tmp/create_timesketch_users.sh
+  - path: /root/create_timesketch_users.sh
     permissions: '0755'
     owner: 'root:root'
     content: |
@@ -67,7 +55,7 @@ write_files:
       done;
       docker compose exec timesketch-web tsctl create-user "${ts_admuser}" --password "${ts_admpass}" && docker compose exec timesketch-web tsctl make-admin "${ts_admuser}" && echo "timesketch admin user ${ts_admuser} created"
       docker compose exec timesketch-web tsctl create-user "${ts_user}" --password "${ts_pass}" && echo "timesketch user ${ts_user} created"
-  - path: /tmp/docker-compose.yml
+  - path: /root/docker-compose.yml
     permissions: '0644'
     owner: 'root:root'
     content: |
@@ -237,12 +225,12 @@ runcmd:
   - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]
   - [ chmod, '755', deploy_timesketch.sh ]
   - [ ./deploy_timesketch.sh ]
-  - [ mv, /tmp/create_timesketch_users.sh, /data/srv/timesketch/ ]
+  - [ cp, /root/create_timesketch_users.sh, /data/srv/timesketch/ ]
   - [ cd, /data/srv/timesketch/ ]
   - [ ./create_timesketch_users.sh ]
   # Set up Notebook
   - [ mkdir, /data/srv/notebook ]
-  - [ mv, /tmp/docker-compose.yml, /data/srv/notebook/ ]
+  - [ cp, /root/docker-compose.yml, /data/srv/notebook/ ]
   - [ mkdir, /data/srv/timesketch/data/notebook ]
   - [ chown, -R, '1000:1000', /data/srv/timesketch/data/notebook ]
   - [ chmod, '0777', /data/srv/timesketch/data/notebook/ ]
