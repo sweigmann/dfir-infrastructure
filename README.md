@@ -24,7 +24,7 @@ This project is in its early stage and therefore must be considered constant wor
 ### Roadmap
 
 1. Split the Terraform code into two modules:
-   - One module should create the base infrastructure such as networks, pools, base images and the Bastion host (exactly 1 configuration instance).
+   - One module should create the base infrastructure such as networks with services, pools and base images (exactly 1 configuration instance).
    - The other module should set up one to many case-specific analysis environments on top of the base infrastructure (1..n configuration instances).
 1. Create services / scripts to automate imports and exports from Plaso to Timesketch.
 1. Integrate [DFIR Iris](https://www.dfir-iris.org/) into the per-case infrastructure.
