@@ -42,7 +42,7 @@ repos:
       #- id: terraform_docs
       - id: terraform_validate
         args:
-          - --tf-init-args=-upgrade
+          #- --tf-init-args=-upgrade
           - --tf-init-args=-lockfile=readonly
 
   - repo: https://github.com/pre-commit/pygrep-hooks
