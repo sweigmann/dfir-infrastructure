@@ -86,10 +86,10 @@ variable "base_image_alpine" {
     source  = string
   })
   default = {
-    name    = "alpine-3.21.2-x86_64.qcow2"
-    release = "v3.21"
+    name    = "alpine-3.22.1-x86_64.qcow2"
+    release = "v3.22"
     format  = "qcow2"
-    source  = "http://dl-cdn.alpinelinux.org/alpine/v3.21/releases/cloud/generic_alpine-3.21.2-x86_64-bios-cloudinit-r0.qcow2"
+    source  = "http://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/generic_alpine-3.22.1-x86_64-bios-cloudinit-r0.qcow2"
   }
 }
 #
@@ -103,10 +103,10 @@ variable "base_image_debian" {
     source  = string
   })
   default = {
-    name    = "debian-12-generic-amd64.qcow2"
-    release = "bookworm"
+    name    = "debian-13-generic-amd64.qcow2"
+    release = "trixie"
     format  = "qcow2"
-    source  = "http://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+    source  = "http://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
   }
 }
 #
