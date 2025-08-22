@@ -72,6 +72,13 @@ packages:
   - libtool
   - nfs-common
   - nfswatch
+  - clang
+  - pkg-config
+  - libscca-utils
+  - yara
+  - libyara-dev
+  - libssl-dev
+  - rustup
   # Not yet available to Debian stable...
   #- rustup
 # Users and Groups
@@ -109,4 +116,8 @@ runcmd:
   - [ apt-file, update ]
   - [ update-command-not-found ]
   - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
+  - [ chmod, 2775, /home/dfir ]
+  - [ su, -l, dfir, -c, 'rustup install stable' ]
+  - [ su, -l, dfir, -c, 'cargo install xsv usnjrnl regview procbins ntdsextract2 mft2bodyfile dionysos dfir-toolkit' ]
+  - [ su, -c, 'for i in $(ls /home/dfir/.cargo/bin/); do ln -s /home/dfir/.cargo/bin/$i /usr/local/bin/; done' ]
   - [ /sbin/reboot ]
