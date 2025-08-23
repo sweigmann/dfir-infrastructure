@@ -129,7 +129,7 @@ packages:
   - locales-all
   - htop
   - vim
-  - man
+  - man-db
   - rsync
   - xz-utils
   - zstd
@@ -146,7 +146,6 @@ packages:
   - ipcalc
   - command-not-found
   - gnupg2
-  - software-properties-common
   - mpack
   - pipx
   - python3-dev
@@ -215,7 +214,7 @@ runcmd:
   - [ sh, ./get-docker.sh ]
   # Set up Timesketch
   - [ cd, /data/srv ]
-  - [ curl, -s, -O ,https://raw.githubusercontent.com/google/timesketch/master/contrib/deploy_timesketch.sh ]
+  - [ curl, -s, -O ,https://raw.githubusercontent.com/google/timesketch/refs/tags/${ts_version}/contrib/deploy_timesketch.sh ]
   - [ sed, -i, 's/^chown 1000 /chown 1000:1000 /g', deploy_timesketch.sh ]
   # Select a specific version of Timesketch
   # Timesketch version must be compatible with notebook!
@@ -250,13 +249,12 @@ runcmd:
   - [ systemctl, enable, docker-compose@timesketch ]
   - [ systemctl, enable, docker-compose@notebook ]
   # Install Plaso
+  - [ chmod, 2775, /home/dfir ]
   - [ su, -l, dfir, -c, 'pipx install git+https://github.com/log2timeline/plaso.git@${plaso_version}' ]
-  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/image_export, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/log2timeline, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/pinfo, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/psort, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/pipx/venvs/plaso/bin/psteal, /usr/local/bin/ ]
-  # Copying does not work. It fails as there would be no files to copy.
-  #- [ cp, -a, /home/dfir/.local/bin/*, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/image_export, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/log2timeline, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/pinfo, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/psort, /usr/local/bin/ ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/psteal, /usr/local/bin/ ]
   # Reboot
   - [ /sbin/reboot ]
