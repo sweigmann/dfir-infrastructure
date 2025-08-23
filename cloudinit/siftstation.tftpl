@@ -118,6 +118,16 @@ runcmd:
   - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
   - [ chmod, 2775, /home/dfir ]
   - [ su, -l, dfir, -c, 'rustup install stable' ]
-  - [ su, -l, dfir, -c, 'cargo install xsv usnjrnl regview procbins ntdsextract2 mft2bodyfile dionysos dfir-toolkit' ]
+  # Either install RUST binaries via cargo (fails sometimes)...
+  #- [ su, -l, dfir, -c, 'cargo install xsv xan usnjrnl regview procbins ntdsextract2 mft2bodyfile dionysos dfir-toolkit' ]
+  # ...or provide them as binary blob!
+  - [ wget, -P, /tmp/, https://codeberg.org/DFIR/dfir-infrastructure/media/branch/main/files/cargo.tar.zst ]
+  - [ mkdir, -p, /home/dfir/.cargo/bin ]
+  - [ chmod, -R, 2775, /home/dfir/.cargo ]
+  - [ tar, -xf, /tmp/cargo.tar.zst, -C, /home/dfir/.cargo/bin/ ]
+  - [ rm, /tmp/cargo.tar.zst ]
+  - [ chown, -R, dfir:dfir, /home/dfir/.cargo ]
+  - [ chmod, 2775, /home/dfir/.cargo/bin/* ]
+  # Common operations
   - [ su, -c, 'for i in $(ls /home/dfir/.cargo/bin/); do ln -s /home/dfir/.cargo/bin/$i /usr/local/bin/; done' ]
   - [ /sbin/reboot ]
