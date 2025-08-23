@@ -87,21 +87,21 @@ resource "random_string" "random_tsusr_pass" {
 #
 # Base Image Pool
 resource "libvirt_pool" "base_pool" {
-  name = "base_images"
+  name = "base"
   type = "dir"
   target {
     path = var.base_pool_config.path
   }
 }
 #
-# Bastion Pool
-resource "libvirt_pool" "bastion_pool" {
-  name = "bastion_hosts"
-  type = "dir"
-  target {
-    path = var.bastion_pool_config.base_path
-  }
-}
+# Bastion Pool (not needed?)
+#resource "libvirt_pool" "bastion_pool" {
+#  name = "bastion_hosts"
+#  type = "dir"
+#  target {
+#    path = var.bastion_pool_config.base_path
+#  }
+#}
 #
 # DFIR Pool
 resource "libvirt_pool" "case_pool" {
