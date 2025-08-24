@@ -222,6 +222,7 @@ runcmd:
   - [ sed, -i, 's#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/master"#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/${ts_version}"#', deploy_timesketch.sh ]
   - [ sed, -i, 's/^START_CONTAINER=/START_CONTAINER=yes/', deploy_timesketch.sh ]
   - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]
+  - [ sed, -i, 's/^  TIMEOUT=300 # 5 minutes timeout/  TIMEOUT=120 # 2 minutes timeout/', deploy_timesketch.sh ]
   - [ chmod, '755', deploy_timesketch.sh ]
   - [ ./deploy_timesketch.sh ]
   - [ cp, /root/create_timesketch_users.sh, /data/srv/timesketch/ ]
