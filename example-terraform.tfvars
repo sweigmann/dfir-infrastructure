@@ -54,7 +54,7 @@ software_tag = {
   ## Notebook build datetime: Dec 19, 2024, 3:40:20 PM
   #ts_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
   plaso      = "20250522"
-  timesketch = "20250807"
+  timesketch = "20250708"
   # Notebook build datetime: Dec 19, 2024, 3:40:20 PM
   ts_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
 }
