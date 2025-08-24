@@ -1,4 +1,4 @@
-# Terraform outputs
+# Terraform Outputs
 # vim: set expandtab ts=2 sw=2 ft=terraform:
 #
 # Prepare some information to pass to the users

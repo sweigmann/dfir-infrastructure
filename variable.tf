@@ -1,4 +1,4 @@
-# Terraform Variable declarations
+# Terraform Variable Declarations
 # vim: set expandtab ts=2 sw=2 ft=terraform:
 #
 # Provider Configuration
