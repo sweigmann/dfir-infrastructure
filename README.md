@@ -23,13 +23,6 @@ This project is in its early stage and therefore must be considered constant wor
 
 ### Roadmap
 
-1. Split the Terraform code into three modules:
-   - The first module should create the base networking infrastructure and its services.
-     (exactly 1 configuration instance)
-   - The second module should create a storage pool and base images from which to install everything.
-     (exactly 1 configuration instance)
-   - The third module should set up one to many case-specific analysis environments on top of the base infrastructure, including distinct storage pools and networks.
-     (1..n configuration instances)
 1. Create services / scripts to automate imports and exports from Plaso to Timesketch.
 1. Integrate [DFIR Iris](https://www.dfir-iris.org/) into the per-case infrastructure.
 1. Decrease the time-to-ready when spawning a case infrastructure. As of now, it would take around 30 minutes, mainly because of `pipx install plaso`.
@@ -37,7 +30,6 @@ This project is in its early stage and therefore must be considered constant wor
 
 ### Bugs
 
-- Find a way to combine the case ID with the name of case instances to make them distiguishable for OpenTOFU / Terraform. As of now, only one case infrastructure can be spawned because of name/id collisions.
 - Bastion host and Access Network still share the same IP range. Thus, gateways would directly be accessible by the "outside world". Bastion host services should be the only services which are initially accessible.
 - The Timesketch Notebook template is buggy. It lacks certain functions to extract data from the XML part of EVTX logs. It is also quite old as newer tags would use features not present in the version of iPython which is shipped with the notebook. Suggestions on how to resolve this are welcome!
 - The siftstation (_not_ to be confused with the SANS Sift Station) does mount the writable NFS share read-only. A workaround is to just reboot the host or issue:

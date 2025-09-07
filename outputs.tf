@@ -3,26 +3,18 @@
 #
 # Prepare some information to pass to the users
 #
-# How to connect to the boxes via SSH...
-output "ssh_config_bastion" {
-  value = "ssh -D <proxyport> -N -f -l <user> ${local.fqdn_bastion}"
-}
-output "ssh_config_siftstation" {
-  value = "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ${local.fqdn_siftstation}"
-}
-output "ssh_config_worker" {
-  value = "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ${local.fqdn_worker}"
-}
-# How to log onto Timesketch
-output "timesketch_url" {
-  value = "Timesketch URL (via SSH SOCKS): http://${local.fqdn_worker}"
-}
-output "timesketch_notebook_url" {
-  value = "Notebook URL (via SSH SOCKS): http://${local.fqdn_worker}:8844/?token=timesketch"
-}
-output "timesketch_admin_user" {
-  value = "Timesketch privileged user/pass: ${local.timesketch_admuser}/${local.timesketch_admpass}"
-}
-output "timesketch_user" {
-  value = "Timesketch non-priv user/pass: ${local.timesketch_user}/${local.timesketch_pass}"
+# Case configs
+output "case_configs" {
+  description = "Case Configurations"
+  value = {
+    for c in var.cases : "${c.case_type}-${c.case_code}-${c.case_date}" => {
+      "ssh_bastion"             = format("%s%s", "ssh -D <proxyport> -N -f -l <user> ", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].fqdn_bastion)
+      "ssh_worker"              = format("%s%s", "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].fqdn_worker)
+      "ssh_siftstation"         = format("%s%s", "ssh -i <sshkey> -l <user> -o ProxyCommand='nc -x 127.0.0.1:<proxyport> %h %p' ", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].fqdn_siftstation)
+      "web_timesketch"          = format("%s%s", "http://", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].fqdn_worker)
+      "web_notebook"            = format("%s%s%s", "http://", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].fqdn_worker, ":8844/?token=timesketch")
+      "userpass_timesketch_adm" = format("%s/%s", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].ts_admuser, module.case["${c.case_type}-${c.case_code}-${c.case_date}"].ts_admpass)
+      "userpass_timesketch_usr" = format("%s/%s", module.case["${c.case_type}-${c.case_code}-${c.case_date}"].ts_user, module.case["${c.case_type}-${c.case_code}-${c.case_date}"].ts_pass)
+    }
+  }
 }

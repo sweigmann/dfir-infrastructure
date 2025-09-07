@@ -1,1 +1,1 @@
-example-terraform.tfvars
+terraform_ice.tfvars
