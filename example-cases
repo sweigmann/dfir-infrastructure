@@ -18,7 +18,7 @@ cases = [
     #software_tag.timesketch = "20241129"
     ## Notebook build datetime: Dec 19, 2024, 3:40:20 PM
     ##software_tag.ts_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
-    software_plaso = "20250522"
+    software_plaso = "20250907"
     # Timesketch versions:
     # 20250807: ERROR - cannot connect to opensearch
     # 20250708: WORKS
@@ -42,7 +42,7 @@ cases = [
     case_date                = "20241225"
     network_addr             = "10.10.20.0"
     network_cidr             = "24"
-    software_plaso           = "20250522"
+    software_plaso           = "20250907"
     software_timesketch      = "20250708"
     software_notebook        = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
     volsize_bastion_root     = 4000000000
