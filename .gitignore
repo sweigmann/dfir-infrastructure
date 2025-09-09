@@ -6,5 +6,6 @@ terraform.tfvars
 users-case-vms.json
 users-gateway.json
 terraform.tfvars
+cases.auto.tfvars
 users-case-vms.json
 users-gateway.json

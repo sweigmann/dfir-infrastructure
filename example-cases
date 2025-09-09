@@ -1,0 +1,54 @@
+# Terraform Variable definitions
+# vim: set expandtab ts=2 sw=2 ft=terraform:
+#
+#
+#
+# Case Configurations
+cases = [
+  {
+    # case id
+    case_type = "df"
+    case_code = "submarine"
+    case_date = "20250327"
+    # case network
+    network_addr = "10.10.10.0"
+    network_cidr = "24"
+    # last known good software combo:
+    #software_tag.plaso       = "20241006"
+    #software_tag.timesketch = "20241129"
+    ## Notebook build datetime: Dec 19, 2024, 3:40:20 PM
+    ##software_tag.ts_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+    software_plaso = "20250522"
+    # Timesketch versions:
+    # 20250807: ERROR - cannot connect to opensearch
+    # 20250708: WORKS
+    # 20250521:
+    # 20250408:
+    # 20250112:
+    # 20241129: WORKS
+    software_timesketch = "20250708"
+    # Notebook build datetime: Dec 19, 2024, 3:40:20 PM
+    software_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+    # volumes
+    volsize_bastion_root     = 4000000000
+    volsize_gateway_root     = 2000000000
+    volsize_worker_root      = 20000000000
+    volsize_worker_data      = 100000000000
+    volsize_siftstation_root = 10000000000
+  },
+  {
+    case_type                = "ir"
+    case_code                = "doublesanta"
+    case_date                = "20241225"
+    network_addr             = "10.10.20.0"
+    network_cidr             = "24"
+    software_plaso           = "20250522"
+    software_timesketch      = "20250708"
+    software_notebook        = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+    volsize_bastion_root     = 4000000000
+    volsize_gateway_root     = 2000000000
+    volsize_worker_root      = 20000000000
+    volsize_worker_data      = 100000000000
+    volsize_siftstation_root = 10000000000
+  }
+]
