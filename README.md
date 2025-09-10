@@ -14,8 +14,10 @@ An infrastructure as code, written for OpenTOFU / Terraform, based on QEMU/KVM. 
 1. Set up your internal gateway to forward requests for your internal DFIR DNS zone (example: `incident-responders.org`) to the KVM machine
 1. Clone this repository
 1. Adapt `terraform.tfvars` according to your needs
+1. Configure your cases in `cases.auto.tfvars`
 1. `tofu init && tofu plan && tofu apply`
 1. URLs and other means how to access your infrastructure will be displayed after the infrastructure was spawned.
+1. Adding and deleting case records from `cases.auto.tfvars` and then executing `tofu plan && tofu apply` will remove and add case infrastructure as indicated.
 
 ## Further Development
 
@@ -23,6 +25,7 @@ This project is in its early stage and therefore must be considered constant wor
 
 ### Roadmap
 
+1. Replace the Timesketch Notebook by a native Jupyter Notebook.
 1. Create services / scripts to automate imports and exports from Plaso to Timesketch.
 1. Integrate [DFIR Iris](https://www.dfir-iris.org/) into the per-case infrastructure.
 1. Decrease the time-to-ready when spawning a case infrastructure. As of now, it would take around 30 minutes, mainly because of `pipx install plaso`.
@@ -32,6 +35,7 @@ This project is in its early stage and therefore must be considered constant wor
 
 - Bastion host and Access Network still share the same IP range. Thus, gateways would directly be accessible by the "outside world". Bastion host services should be the only services which are initially accessible.
 - The Timesketch Notebook template is buggy. It lacks certain functions to extract data from the XML part of EVTX logs. It is also quite old as newer tags would use features not present in the version of iPython which is shipped with the notebook. Suggestions on how to resolve this are welcome!
+- The Timesketch Notebook in its most recent version still runs on Debian 11 and Python 3.8 which is incompatible with newer versions of the timesketch API Python module. The last version of Timesketch Notebook known to work is dated from Dec 19, 2024.
 - The siftstation (_not_ to be confused with the SANS Sift Station) does mount the writable NFS share read-only. A workaround is to just reboot the host or issue:
     ```
     mount -o remount,rw /data/read-write /data/read-write
