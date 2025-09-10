@@ -214,7 +214,7 @@ runcmd:
   - [ sh, ./get-docker.sh ]
   # Set up Timesketch
   - [ cd, /data/srv ]
-  - [ curl, -s, -O ,https://raw.githubusercontent.com/google/timesketch/refs/tags/${ts_version}/contrib/deploy_timesketch.sh ]
+  - [ curl, -s, -O ,https://raw.githubusercontent.com/google/timesketch/${ts_version}/contrib/deploy_timesketch.sh ]
   - [ sed, -i, 's/^chown 1000 /chown 1000:1000 /g', deploy_timesketch.sh ]
   # Select a specific version of Timesketch
   # Timesketch version must be compatible with notebook!
