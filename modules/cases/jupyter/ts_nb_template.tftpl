@@ -11,7 +11,7 @@
     "## Guides\n",
     "* [Timesketch Collab Quickstart](https://colab.research.google.com/github/google/timesketch/blob/master/notebooks/colab-timesketch-demo.ipynb)\n",
     "* [Jupyter Notebook Tutorial](https://www.dataquest.io/blog/jupyter-notebook-tutorial/)\n",
-    "* [How to Use Jupyter Notebooks: The Ultimate Guide](https://www.datacamp.com/tutorial/tutorial-jupyter-notebook)",
+    "* [How to Use Jupyter Notebooks: The Ultimate Guide](https://www.datacamp.com/tutorial/tutorial-jupyter-notebook)\n",
     "* [Notebook Community Demo](https://notebook.community/google/timesketch/notebooks/jupyter-timesketch-demo)"
    ]
   },
@@ -21,7 +21,7 @@
    "metadata": {},
    "source": [
     "## Import\n",
-    "To start a notebook we import few base libraries.\n",
+    "To start a notebook we need to install and import few base libraries.\n",
     "Execute the cell below by pressing the play button or using \"shift + enter\""
    ]
   },
@@ -32,8 +32,12 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# @title Import Libraries\n",
+    "# @title Install and import Libraries\n",
+    "# @markdown Install dependencies.\n",
+    "!pip install timesketch-api-client picatrix matplotlib\n",
     "# @markdown We first need to import libraries that we will use throughout the colab.\n",
+    "%matplotlib inline\n",
+    "import matplotlib.pyplot as plt\n",
     "import sys\n",
     "import altair as alt # For graphing.\n",
     "import numpy as np   # Never know when this will come in handy.\n",

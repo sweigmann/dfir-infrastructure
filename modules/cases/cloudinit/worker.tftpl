@@ -59,16 +59,16 @@ write_files:
     permissions: '0644'
     owner: 'root:root'
     content: |
-      version: '3'
       services:
         notebook:
           container_name: notebook
-          image: us-docker.pkg.dev/osdfir-registry/timesketch/notebook@${ts_nb_version}
+          image: quay.io/jupyter/base-notebook@${ts_nb_version}
+          command: start-notebook.py --NotebookApp.token='timesketch' --port=8888
           ports:
-            - 8844:8844
-          restart: on-failure
+            - ${ts_nb_port}:8888
           volumes:
-            - /data/srv/timesketch/data/notebook/:/usr/local/src/picadata/
+            - /data/srv/timesketch/data/notebook:/home/jovyan/work
+          restart: on-failure
   - path: '/etc/systemd/system/docker-compose@.service'
     permissions: '0644'
     owner: 'root:root'
@@ -148,6 +148,7 @@ packages:
   - gnupg2
   - mpack
   - pipx
+  - pkg-config
   - python3-dev
   - python3-pip
   - python3-flor
@@ -251,7 +252,7 @@ runcmd:
   - [ systemctl, enable, docker-compose@notebook ]
   # Install Plaso
   - [ chmod, 2775, /home/dfir ]
-  - [ su, -l, dfir, -c, 'pipx install git+https://github.com/log2timeline/plaso.git@${plaso_version}' ]
+  - [ su, -l, dfir, -c, 'MAKEFLAGS="-j$(nproc)" MAX_JOBS=$(nproc) pipx install git+https://github.com/log2timeline/plaso.git@${plaso_version}' ]
   - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/image_export, /usr/local/bin/ ]
   - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/log2timeline, /usr/local/bin/ ]
   - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/pinfo, /usr/local/bin/ ]

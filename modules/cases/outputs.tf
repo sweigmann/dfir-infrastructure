@@ -26,3 +26,6 @@ output "ts_user" {
 output "ts_pass" {
   value = local.timesketch_pass
 }
+output "jp_port" {
+  value = local.jupyter_port
+}

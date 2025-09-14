@@ -47,7 +47,7 @@ variable "timesketch_version" {
   type        = string
 }
 variable "notebook_version" {
-  description = "Docker Tag for the Timesketch Notebook"
+  description = "Docker Tag for the Jupyter Notebook"
   type        = string
 }
 #

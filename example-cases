@@ -27,8 +27,10 @@ cases = [
     # 20250112:
     # 20241129: WORKS
     software_timesketch = "20250708"
-    # Notebook build datetime: Dec 19, 2024, 3:40:20 PM
-    software_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+    # Jupyter Notebook version info here:
+    # https://quay.io/repository/jupyter/base-notebook?tab=tags&tag=x86_64-latest
+    # Notebook build datetime: Mon, Sep 8, 2025 7:43 PM
+    software_notebook = "sha256:09748ccee3b4d4f36c96ad6077de34ba14a860423231b186e82c5352f3f4b7a2"
     # volumes
     volsize_bastion_root     = 4000000000
     volsize_gateway_root     = 2000000000
@@ -44,7 +46,7 @@ cases = [
     network_cidr             = "24"
     software_plaso           = "20250907"
     software_timesketch      = "20250708"
-    software_notebook        = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
+    software_notebook        = "sha256:09748ccee3b4d4f36c96ad6077de34ba14a860423231b186e82c5352f3f4b7a2"
     volsize_bastion_root     = 4000000000
     volsize_gateway_root     = 2000000000
     volsize_worker_root      = 20000000000

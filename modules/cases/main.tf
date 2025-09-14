@@ -24,6 +24,8 @@ locals {
   timesketch_admpass = random_string.random_tsadm_pass.result
   timesketch_user    = "dfir"
   timesketch_pass    = random_string.random_tsusr_pass.result
+  # Jupyter config
+  jupyter_port = "8888"
   # Users
   users_case_vms = jsondecode(file(var.users_case_vms))
   users_gateway  = jsondecode(file(var.users_gateway))
@@ -288,6 +290,7 @@ data "cloudinit_config" "user_data_worker" {
         ts_pass        = local.timesketch_pass
         ts_version     = var.timesketch_version
         ts_nb_version  = var.notebook_version
+        ts_nb_port     = local.jupyter_port
         plaso_version  = var.plaso_version
       }
     )
@@ -417,7 +420,7 @@ resource "libvirt_volume" "siftstation_root" {
 resource "libvirt_domain" "siftstation" {
   name = "${var.case_id}-siftstation"
   depends_on = [
-    libvirt_domain.worker,
+    #libvirt_domain.worker,
     time_sleep.wait_for_worker
   ]
   autostart = true
