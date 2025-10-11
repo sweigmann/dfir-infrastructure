@@ -229,6 +229,11 @@ runcmd:
   - [ cp, /root/create_timesketch_users.sh, /data/srv/timesketch/ ]
   - [ cd, /data/srv/timesketch/ ]
   - [ ./create_timesketch_users.sh ]
+  # Timesketch CLI tools
+  - [ su, -l, dfir, -c, 'MAKEFLAGS="-j$(nproc)" MAX_JOBS=$(nproc) pipx install timesketch-cli-client' ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/timesketch-cli-client/bin/timesketch, /usr/local/bin/ ]
+  - [ su, -l, dfir, -c, 'MAKEFLAGS="-j$(nproc)" MAX_JOBS=$(nproc) pipx install timesketch-import-client' ]
+  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/timesketch-import-client/bin/timesketch_importer, /usr/local/bin/ ]
   # Set up Notebook
   - [ mkdir, /data/srv/notebook ]
   - [ cp, /root/docker-compose.yml, /data/srv/notebook/ ]
