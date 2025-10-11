@@ -14,23 +14,21 @@ cases = [
     network_addr = "10.10.10.0"
     network_cidr = "24"
     # last known good software combo:
-    #software_tag.plaso       = "20241006"
-    #software_tag.timesketch = "20241129"
-    ## Notebook build datetime: Dec 19, 2024, 3:40:20 PM
-    ##software_tag.ts_notebook = "sha256:4ca1d875c49b3e8ba2fa55d3776bcbd586b9dcf8a3537db4dcc6c07e8f5c3844"
-    software_plaso = "20250907"
+    #software_tag.plaso       = "20250907"
+    #software_tag.timesketch = "20250708"
+    ## Notebook build datetime: Mon, Sep 8, 2025 7:43 PM
+    ##software_tag.ts_notebook = "sha256:09748ccee3b4d4f36c96ad6077de34ba14a860423231b186e82c5352f3f4b7a2"
+    software_plaso = "20250918"
     # Timesketch versions:
+    # 20250929: WORKS
     # 20250807: ERROR - cannot connect to opensearch
     # 20250708: WORKS
-    # 20250521:
-    # 20250408:
-    # 20250112:
     # 20241129: WORKS
-    software_timesketch = "20250708"
+    software_timesketch = "20250929"
     # Jupyter Notebook version info here:
     # https://quay.io/repository/jupyter/base-notebook?tab=tags&tag=x86_64-latest
-    # Notebook build datetime: Mon, Sep 8, 2025 7:43 PM
-    software_notebook = "sha256:09748ccee3b4d4f36c96ad6077de34ba14a860423231b186e82c5352f3f4b7a2"
+    # Notebook build datetime: Mon, Oct 6, 2025 6:08 AM
+    software_notebook = "sha256:8349dd6b98ef142f3270f22b1b2a530d399d3c5326668655a83edea902c55692"
     # volumes
     volsize_bastion_root     = 4000000000
     volsize_gateway_root     = 2000000000
@@ -44,9 +42,9 @@ cases = [
     case_date                = "20241225"
     network_addr             = "10.10.20.0"
     network_cidr             = "24"
-    software_plaso           = "20250907"
-    software_timesketch      = "20250708"
-    software_notebook        = "sha256:09748ccee3b4d4f36c96ad6077de34ba14a860423231b186e82c5352f3f4b7a2"
+    software_plaso           = "20250918"
+    software_timesketch      = "20250929"
+    software_notebook        = "sha256:8349dd6b98ef142f3270f22b1b2a530d399d3c5326668655a83edea902c55692"
     volsize_bastion_root     = 4000000000
     volsize_gateway_root     = 2000000000
     volsize_worker_root      = 20000000000
