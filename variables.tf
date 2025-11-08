@@ -29,13 +29,16 @@ variable "cases" {
     network_cidr = string
     # Tags and versions for software
     software_plaso      = string
+    software_vol3       = string
     software_timesketch = string
     software_notebook   = string
+    software_iris       = string
     # Volume sizes (in Bytes)
     volsize_bastion_root     = number
     volsize_gateway_root     = number
     volsize_worker_root      = number
     volsize_worker_data      = number
+    volsize_iris_root        = number
     volsize_siftstation_root = number
   }))
   /*
@@ -52,6 +55,7 @@ variable "cases" {
     volume_size.gateway_root     = 2000000000
     volume_size.worker_root      = 20000000000
     volume_size.worker_data      = 100000000000
+    volume_size.iris_root        = 10000000000
     volume_size.siftstation_root = 10000000000
   },
   {
@@ -67,6 +71,7 @@ variable "cases" {
     volume_size.gateway_root     = 2000000000
     volume_size.worker_root      = 20000000000
     volume_size.worker_data      = 100000000000
+    volume_size.iris_root        = 10000000000
     volume_size.siftstation_root = 10000000000
   }]
   */

@@ -8,6 +8,22 @@ An infrastructure as code, written for OpenTOFU / Terraform, based on QEMU/KVM. 
 
 <img src="docs/overview.png">
 
+### Features
+
+Each case instance comes with tools and services which are limited to the case instance. It is not intended to use a case service with data from other cases.
+
+Available out of the box - per case:
+
+- [DFIR-IRIS](https://www.dfir-iris.org/)
+- [Timesketch](https://timesketch.org/)
+- [Jupyter Notebooks](https://jupyter.org/)
+- [Plaso](https://github.com/log2timeline/plaso)
+- [The Sleuth Kit](https://www.sleuthkit.org/sleuthkit/)
+- [Volatility3](https://volatilityfoundation.org/the-volatility-framework/)
+- [DFIR-Toolkit](https://codeberg.org/dfir-dd/dfir-toolkit)
+- [danalyze](https://codeberg.org/DFIR/danalyze) / [time-tools](https://codeberg.org/DFIR/time-tools) / [offset-tools](https://codeberg.org/DFIR/offset-tools)
+- and more...
+
 ## Quickstart
 
 1. Have a machine ready running KVM
@@ -34,9 +50,7 @@ This project is in its early stage and therefore must be considered constant wor
 
 ### Roadmap
 
-1. Create services / scripts to automate imports and exports from Plaso to Timesketch.
-1. Integrate [DFIR Iris](https://www.dfir-iris.org/) into the per-case infrastructure.
-1. Decrease the time-to-ready when spawning a case infrastructure. As of now, it would take around 30 minutes, mainly because of `pipx install plaso`.
+1. Think about automated imports from Plaso to Timesketch.
 1. Develop and integrate means to analyze and visualize NetFlow data.
 
 ### Bugs

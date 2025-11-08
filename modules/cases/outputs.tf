@@ -11,6 +11,9 @@ output "fqdn_gateway" {
 output "fqdn_worker" {
   value = local.fqdn_worker
 }
+output "fqdn_iris" {
+  value = local.fqdn_iris
+}
 output "fqdn_siftstation" {
   value = local.fqdn_siftstation
 }
@@ -28,4 +31,10 @@ output "ts_pass" {
 }
 output "jp_port" {
   value = local.jupyter_port
+}
+output "iris_admuser" {
+  value = local.iris_admuser
+}
+output "iris_admpass" {
+  value = local.iris_admpass
 }

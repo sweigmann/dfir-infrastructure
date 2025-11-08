@@ -164,6 +164,8 @@
    "source": [
     "*If you want to query data you can use the snippets menu, or create a search obj, and to display a table use `display_table(search_obj.table)` or `display_table(data_frame)`*\n",
     "\n",
+    "**NOTE:** For this to work, a Windows-based timeline has to be completely imported into Timesketch and the `Windows logon/logoff events analyzer` must have been executed!\n",
+    "\n",
     "To see a list of available helper functions run `%picatrixhelpers` in a cell, or to see a list of functions/magics use `%picatrixmagics`."
    ]
   },
@@ -369,7 +371,7 @@
     "  login_grouped.rename(columns={'message': 'count'}, inplace=True)\n",
     "    \n",
     "  brush = alt.selection_interval(encodings=['x'])\n",
-    "  click = alt.selection_multi(encodings=['color'])\n",
+    "  click = alt.selection_point(encodings=['color'])\n",
     "  color = alt.Color('count:Q')\n",
     "\n",
     "  chart1 = alt.Chart(login_grouped).mark_point().encode(\n",
@@ -379,7 +381,7 @@
     "  ).properties(\n",
     "      title=title,\n",
     "      width=600\n",
-    "  ).add_selection(\n",
+    "  ).add_params(\n",
     "      brush\n",
     "  ).transform_filter(\n",
     "      click\n",
@@ -394,7 +396,7 @@
     "      brush\n",
     "  ).properties(\n",
     "      width=600\n",
-    "  ).add_selection(\n",
+    "  ).add_params(\n",
     "      click\n",
     "  )\n",
     "  \n",

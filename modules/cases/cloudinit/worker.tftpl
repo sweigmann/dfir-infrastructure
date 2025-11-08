@@ -158,6 +158,8 @@ packages:
   - libtool
   - nfs-kernel-server
   - nfswatch
+  - yara
+  - libyara-dev
 # Users and Groups
 #   Sourced from users-case-vms.json
 #   First user with ID 1000 -- needed for Docker.
@@ -197,6 +199,15 @@ runcmd:
   - [ chmod, '2777', /data ]
   - [ mkdir, /data/read-only ]
   - [ mkdir, /data/read-write ]
+  - [ mkdir, -p, /data/read-write/raw/images ]
+  - [ mkdir, -p, /data/read-write/raw/triage ]
+  - [ mkdir, -p, /data/read-write/raw/logs ]
+  - [ mkdir, -p, /data/read-write/raw/pcap ]
+  - [ mkdir, -p, /data/read-write/raw/netflow ]
+  - [ mkdir, -p, /data/read-write/processed/plaso ]
+  - [ mkdir, -p, /data/read-write/processed/bodyfiles ]
+  - [ mkdir, -p, /data/read-write/processed/strings ]
+  - [ mkdir, -p, /data/read-write/processed/volatility3 ]
   - [ chown, -R, root:dfir, /data/read-only ]
   - [ chown, -R, root:dfir, /data/read-write ]
   - [ chmod, '2775', /data/read-only ]
@@ -215,15 +226,16 @@ runcmd:
   - [ sh, ./get-docker.sh ]
   # Set up Timesketch
   - [ cd, /data/srv ]
-  - [ curl, -s, -O ,https://raw.githubusercontent.com/google/timesketch/${ts_version}/contrib/deploy_timesketch.sh ]
+  - [ curl, -s, -O, https://raw.githubusercontent.com/google/timesketch/${ts_version}/contrib/deploy_timesketch.sh ]
   - [ sed, -i, 's/^chown 1000 /chown 1000:1000 /g', deploy_timesketch.sh ]
   # Select a specific version of Timesketch
   # Timesketch version must be compatible with notebook!
-  - [ sed, -i, 's#^OPENSEARCH_MEM_USE_GB=.*#OPENSEARCH_MEM_USE_GB=10#', deploy_timesketch.sh ]
+  - [ sed, -i, 's#^OPENSEARCH_MEM_USE_GB=.*#OPENSEARCH_MEM_USE_GB=14#', deploy_timesketch.sh ]
   - [ sed, -i, 's#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/master"#GITHUB_BASE_URL="https://raw.githubusercontent.com/google/timesketch/${ts_version}"#', deploy_timesketch.sh ]
   - [ sed, -i, 's/^START_CONTAINER=/START_CONTAINER=yes/', deploy_timesketch.sh ]
   - [ sed, -i, 's/^SKIP_CREATE_USER=/SKIP_CREATE_USER=yes/', deploy_timesketch.sh ]
-  - [ sed, -i, 's/^  TIMEOUT=300 # 5 minutes timeout/  TIMEOUT=120 # 2 minutes timeout/', deploy_timesketch.sh ]
+  #- [ sed, -i, 's/^  TIMEOUT=300 # 5 minutes timeout/  TIMEOUT=120 # 2 minutes timeout/', deploy_timesketch.sh ]
+  - [ sed, -i, 's/^  TIMEOUT=300 # 5 minutes timeout/  TIMEOUT=30 # 30 seconds timeout/', deploy_timesketch.sh ]
   - [ chmod, '755', deploy_timesketch.sh ]
   - [ ./deploy_timesketch.sh ]
   - [ cp, /root/create_timesketch_users.sh, /data/srv/timesketch/ ]
@@ -255,13 +267,8 @@ runcmd:
   - [ systemctl, enable, docker-cleanup.timer ]
   - [ systemctl, enable, docker-compose@timesketch ]
   - [ systemctl, enable, docker-compose@notebook ]
-  # Install Plaso
-  - [ chmod, 2775, /home/dfir ]
-  - [ su, -l, dfir, -c, 'MAKEFLAGS="-j$(nproc)" MAX_JOBS=$(nproc) pipx install git+https://github.com/log2timeline/plaso.git@${plaso_version}' ]
-  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/image_export, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/log2timeline, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/pinfo, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/psort, /usr/local/bin/ ]
-  - [ ln, -s, /home/dfir/.local/share/pipx/venvs/plaso/bin/psteal, /usr/local/bin/ ]
+  # Create links to upload and download directories so the users can find them easily
+  - [ ln, -s, /data/srv/timesketch/data/notebook, /data/read-write/notebook ]
+  - [ ln, -s, /data/srv/timesketch/upload, /data/read-write/timesketch ]
   # Reboot
   - [ /sbin/reboot ]

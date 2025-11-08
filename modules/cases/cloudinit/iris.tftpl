@@ -1,0 +1,184 @@
+#cloud-config
+hostname: ${hostname}
+fqdn: ${fqdn}
+# resize partitions
+growpart:
+  mode: auto
+  devices: ['/']
+# Write files to prepare:
+# * manually write debian.sources
+# * configure NFS
+# * configure locales
+# * Write down some helpers for Timesketch
+write_files:
+  - path: /etc/apt/sources.list.d/debian.sources
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      Types: deb
+      URIs: http://deb.debian.org/debian/
+      Suites: ${distro_release} ${distro_release}-updates ${distro_release}-backports
+      Components: main contrib non-free non-free-firmware
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+      Types: deb
+      URIs: http://security.debian.org/debian-security/
+      Suites: ${distro_release}-security
+      Components: main contrib non-free non-free-firmware
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+  - path: /etc/default/locale
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      LANGUAGE=en_US.UTF-8
+      LC_ALL=en_US.UTF-8
+      LANG=en_US.UTF-8
+      LC_NUMERIC=de_DE.UTF-8
+      LC_TIME=de_DE.UTF-8
+      LC_MONETARY=de_DE.UTF-8
+      LC_PAPER=de_DE.UTF-8
+      LC_MEASUREMENT=de_DE.UTF-8
+  - path: '/etc/systemd/system/docker-compose@.service'
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      # Credits: https://gist.github.com/mosquito/b23e1c1e5723a7fd9e6568e5cf91180f
+      [Unit]
+      Description=%i service with docker compose
+      PartOf=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      WorkingDirectory=/etc/docker/compose/%i
+      ExecStart=/usr/bin/docker compose up -d --remove-orphans
+      ExecStop=/usr/bin/docker compose down
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: /etc/systemd/system/docker-cleanup.timer
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      # Credits: https://gist.github.com/mosquito/b23e1c1e5723a7fd9e6568e5cf91180f
+      [Unit]
+      Description=Docker cleanup timer
+
+      [Timer]
+      OnUnitInactiveSec=12h
+
+      [Install]
+      WantedBy=timers.target
+  - path: /etc/systemd/system/docker-cleanup.service
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      # Credits: https://gist.github.com/mosquito/b23e1c1e5723a7fd9e6568e5cf91180f
+      [Unit]
+      Description=Docker cleanup
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      WorkingDirectory=/tmp
+      User=root
+      Group=root
+      ExecStart=/usr/bin/docker system prune -af
+
+      [Install]
+      WantedBy=multi-user.target
+# Update apt database and packages on first boot
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+# Install packages
+packages:
+  - locales-all
+  - htop
+  - vim
+  - man-db
+  - rsync
+  - xz-utils
+  - zstd
+  - pigz
+  - tmux
+  - tcpdump
+  - net-tools
+  - bind9-dnsutils
+  - wget
+  - curl
+  - git
+  - git-lfs
+  - pwgen
+  - command-not-found
+  - gnupg2
+  - nfs-common
+  - nfswatch
+  # Not yet available to Debian stable...
+  #- rustup
+# Users and Groups
+#   Sourced from users-case-vms.json
+#   To enforce identic UIDs and GIDs for other users,
+#   we just create them all the same on all nodes.
+${replace(yamlencode("${users}"), "\"", "")}
+# Disks - Mount NFS shares from the worker node
+mounts:
+  - [ "${worker_addr}:/read-only", /data/read-only, nfs, "defaults,ro,nofail", "0", "0" ]
+  - [ "${worker_addr}:/read-write", /data/read-write, nfs, "defaults,rw,nofail", "0", "0" ]
+# On each boot, do
+#   Bug: NFS4 would not mount rw on /data/read-write. Do it manually.
+# - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
+#   Bug: setting hostname and domain does not work.
+# - [ hostname, "${fqdn}" ]
+bootcmd:
+  - [ apt, update ]
+  - [ apt, upgrade, -y ]
+  - [ apt, clean ]
+  - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
+# On first boot, do
+runcmd:
+  - [ chown, -R, nobody:dfir, /data ]
+  - [ chmod, 2777, /data ]
+  - [ mkdir, /data/read-only ]
+  - [ mkdir, /data/read-write ]
+  - [ chown, -R, root:dfir, /data/read-only ]
+  - [ chown, -R, root:dfir, /data/read-write ]
+  - [ chmod, 2775, /data/read-only ]
+  - [ chmod, 2775, /data/read-write ]
+  - [ apt, update ]
+  - [ apt-file, update ]
+  - [ update-command-not-found ]
+  - [ mount, -o, 'remount,rw', /data/read-write, /data/read-write ]
+  - [ chmod, 2775, /home/dfir ]
+  # Install Docker
+  - [ mkdir, -p, /data/srv/docker ]
+  - [ chmod, '0710', /data/srv/docker ]
+  - [ ln, -s, /data/srv/docker, /var/lib/docker ]
+  - [ cd, /data/srv ]
+  - [ curl, -fsSL, https://get.docker.com, -o, get-docker.sh ]
+  - [ sh, ./get-docker.sh ]
+  # Set up DFIR Iris
+  - [ cd, /data/srv/ ]
+  - [ git, clone, --depth, 1, --branch, '${iris_version}', https://github.com/dfir-iris/iris-web.git, iris ]
+  - [ cd, iris ]
+  - [ cp, .env.model, .env ]
+  - [ sed, -i, 's/^SERVER_NAME=.*$/SERVER_NAME=${fqdn}/', .env ]
+  - [ sed, -i, 's:^POSTGRES_PASSWORD=.*$:POSTGRES_PASSWORD=${iris_pg_pass}:', .env ]
+  - [ sed, -i, 's:^POSTGRES_ADMIN_PASSWORD=.*$:POSTGRES_ADMIN_PASSWORD=${iris_pgadm_pass}:', .env ]
+  - [ sed, -i, 's:^IRIS_SECRET_KEY=.*$:IRIS_SECRET_KEY=${iris_secretkey}:', .env ]
+  - [ sed, -i, 's:^IRIS_SECURITY_PASSWORD_SALT=.*$:IRIS_SECURITY_PASSWORD_SALT=${iris_pwsalt}:', .env ]
+  - [ sed, -i, 's:^#IRIS_ADM_USERNAME=.*:IRIS_ADM_USERNAME=${iris_admuser}:', .env ]
+  - [ sed, -i, 's:^#IRIS_ADM_PASSWORD=.*:IRIS_ADM_PASSWORD=${iris_admpass}:', .env ]
+  - [ sed, -i, 's:^#IRIS_ADM_API_KEY=.*:IRIS_ADM_API_KEY=${iris_admapikey}:', .env ]
+  - [ docker, compose, up, -d ]
+  - [ cd ]
+  # Set up systemd services for Docker containers
+  - [ mkdir, -p, /etc/docker/compose ]
+  - [ ln, -s, /data/srv/iris, /etc/docker/compose/ ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, docker-cleanup.timer ]
+  - [ systemctl, enable, docker-compose@iris ]
+  # Reboot
+  - [ /sbin/reboot ]

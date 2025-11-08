@@ -57,12 +57,15 @@ module "case" {
   nwk_addr            = each.value.network_addr
   nwk_cidr            = each.value.network_cidr
   plaso_version       = each.value.software_plaso
+  vol3_version        = each.value.software_vol3
   timesketch_version  = each.value.software_timesketch
   notebook_version    = each.value.software_notebook
+  iris_version        = each.value.software_iris
   bastion_root        = each.value.volsize_bastion_root
   gateway_root        = each.value.volsize_gateway_root
   worker_root         = each.value.volsize_worker_root
   worker_data         = each.value.volsize_worker_data
+  iris_root           = each.value.volsize_iris_root
   siftstation_root    = each.value.volsize_siftstation_root
   dfir_pool_base_path = var.dfir_pool_config.base_path
   access_nwk_domain   = var.access_network.domain

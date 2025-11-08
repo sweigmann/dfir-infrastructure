@@ -42,12 +42,20 @@ variable "plaso_version" {
   description = "Git Tag for Plaso"
   type        = string
 }
+variable "vol3_version" {
+  description = "Git Tag for Volatility3"
+  type        = string
+}
 variable "timesketch_version" {
   description = "Git Tag for Timesketch"
   type        = string
 }
 variable "notebook_version" {
   description = "Docker Tag for the Jupyter Notebook"
+  type        = string
+}
+variable "iris_version" {
+  description = "Git Tag for DFIR Iris"
   type        = string
 }
 #
@@ -86,6 +94,10 @@ variable "worker_root" {
 }
 variable "worker_data" {
   description = "Data volume size for the worker host"
+  type        = number
+}
+variable "iris_root" {
+  description = "Root volume size for the dfir-iris host"
   type        = number
 }
 variable "siftstation_root" {

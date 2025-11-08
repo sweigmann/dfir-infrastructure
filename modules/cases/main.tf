@@ -12,12 +12,13 @@ locals {
   case_nwk_gateway    = cidrhost("${var.nwk_addr}/${var.nwk_cidr}", 2)
   access_nwk_gateway  = libvirt_domain.gateway.network_interface.0.addresses.0
   case_nwk_dhcp_first = cidrhost("${var.nwk_addr}/${var.nwk_cidr}", 3)
-  case_nwk_dhcp_last  = cidrhost("${var.nwk_addr}/${var.nwk_cidr}", 6)
+  case_nwk_dhcp_last  = cidrhost("${var.nwk_addr}/${var.nwk_cidr}", -2)
   # FQDN for bastion differs as it lives within the access network
   fqdn_bastion = "bastion-${var.case_id}.${var.access_nwk_domain}"
   # FQDNs for all other hosts which live within the case network
   fqdn_gateway     = "gateway.${local.case_nwk_domain}"
   fqdn_worker      = "worker.${local.case_nwk_domain}"
+  fqdn_iris        = "iris.${local.case_nwk_domain}"
   fqdn_siftstation = "siftstation.${local.case_nwk_domain}"
   # Timesketch config
   timesketch_admuser = "tsadm"
@@ -26,6 +27,14 @@ locals {
   timesketch_pass    = random_string.random_tsusr_pass.result
   # Jupyter config
   jupyter_port = "8888"
+  # DFIR Iris config
+  iris_admuser    = "irisadm"
+  iris_admpass    = random_string.random_iris_adm_pass.result
+  iris_admapikey  = random_string.random_iris_adm_apikey.result
+  iris_secretkey  = random_string.random_iris_secretkey.result
+  iris_pwsalt     = random_string.random_iris_pwsalt.result
+  iris_pg_pass    = random_string.random_iris_pg_pass.result
+  iris_pgadm_pass = random_string.random_iris_pgadm_pass.result
   # Users
   users_case_vms = jsondecode(file(var.users_case_vms))
   users_gateway  = jsondecode(file(var.users_gateway))
@@ -53,6 +62,60 @@ resource "random_string" "random_tsusr_pass" {
     first = var.case_id
   }
   length  = 20
+  special = false
+  upper   = true
+}
+resource "random_string" "random_iris_pg_pass" {
+  keepers = {
+    #  first = "${timestamp()}"
+    first = var.case_id
+  }
+  length  = 20
+  special = false
+  upper   = true
+}
+resource "random_string" "random_iris_pgadm_pass" {
+  keepers = {
+    #  first = "${timestamp()}"
+    first = var.case_id
+  }
+  length  = 20
+  special = false
+  upper   = true
+}
+resource "random_string" "random_iris_pwsalt" {
+  keepers = {
+    #  first = "${timestamp()}"
+    first = var.case_id
+  }
+  length  = 16
+  special = false
+  upper   = true
+}
+resource "random_string" "random_iris_adm_pass" {
+  keepers = {
+    #  first = "${timestamp()}"
+    first = var.case_id
+  }
+  length  = 20
+  special = false
+  upper   = true
+}
+resource "random_string" "random_iris_adm_apikey" {
+  keepers = {
+    #  first = "${timestamp()}"
+    first = var.case_id
+  }
+  length  = 20
+  special = false
+  upper   = true
+}
+resource "random_string" "random_iris_secretkey" {
+  keepers = {
+    #  first = "${timestamp()}"
+    first = var.case_id
+  }
+  length  = 32
   special = false
   upper   = true
 }
@@ -291,7 +354,6 @@ data "cloudinit_config" "user_data_worker" {
         ts_version     = var.timesketch_version
         ts_nb_version  = var.notebook_version
         ts_nb_port     = local.jupyter_port
-        plaso_version  = var.plaso_version
       }
     )
   }
@@ -380,6 +442,90 @@ resource "libvirt_domain" "worker" {
   }
 }
 #
+# iris init
+data "cloudinit_config" "user_data_iris" {
+  # https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/config
+  gzip          = false
+  base64_encode = false
+  part {
+    filename     = "cloud-config.yaml"
+    content_type = "text/cloud-config"
+    content = templatefile(
+      "${path.module}/cloudinit/iris.tftpl",
+      {
+        hostname        = "iris"
+        fqdn            = local.fqdn_iris
+        distro_release  = var.sw_debian_release
+        internal_net    = var.nwk_addr
+        internal_cidr   = var.nwk_cidr
+        worker_addr     = libvirt_domain.worker.network_interface.0.addresses.0
+        users           = local.users_case_vms
+        case_id         = var.case_id
+        iris_version    = var.iris_version
+        iris_admuser    = local.iris_admuser
+        iris_admpass    = local.iris_admpass
+        iris_admapikey  = local.iris_admapikey
+        iris_secretkey  = local.iris_secretkey
+        iris_pwsalt     = local.iris_pwsalt
+        iris_pgadm_pass = local.iris_pgadm_pass
+        iris_pg_pass    = local.iris_pg_pass
+      }
+    )
+  }
+}
+resource "libvirt_cloudinit_disk" "cloudinit_iris" {
+  name      = "cloudinit_iris.iso"
+  user_data = data.cloudinit_config.user_data_iris.rendered
+  pool      = libvirt_pool.case_pool.name
+}
+# iris root volume
+resource "libvirt_volume" "iris_root" {
+  name             = "iris-root.qcow2"
+  format           = "qcow2"
+  size             = var.iris_root
+  pool             = libvirt_pool.case_pool.name
+  base_volume_id   = var.sw_debian_image_id
+  base_volume_pool = var.base_image_pool_id
+}
+# iris domain
+resource "libvirt_domain" "iris" {
+  name = "${var.case_id}-iris"
+  #  depends_on = [
+  #    time_sleep.wait_for_worker
+  #  ]
+  autostart = true
+  memory    = "8192"
+  vcpu      = 4
+  cloudinit = libvirt_cloudinit_disk.cloudinit_iris.id
+  cpu {
+    mode = "host-passthrough"
+  }
+  disk {
+    volume_id = libvirt_volume.iris_root.id
+    scsi      = true
+  }
+  network_interface {
+    network_id     = libvirt_network.case_network.id
+    hostname       = local.fqdn_iris
+    wait_for_lease = true
+  }
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
+  }
+  console {
+    type        = "pty"
+    target_type = "virtio"
+    target_port = "1"
+  }
+  graphics {
+    type        = "spice"
+    listen_type = "address"
+    autoport    = true
+  }
+}
+#
 # siftstation init
 data "cloudinit_config" "user_data_siftstation" {
   # https://registry.terraform.io/providers/hashicorp/cloudinit/latest/docs/data-sources/config
@@ -398,6 +544,9 @@ data "cloudinit_config" "user_data_siftstation" {
         internal_cidr  = var.nwk_cidr
         worker_addr    = libvirt_domain.worker.network_interface.0.addresses.0
         users          = local.users_case_vms
+        case_id        = var.case_id
+        plaso_version  = var.plaso_version
+        vol3_version   = var.vol3_version
       }
     )
   }
@@ -419,13 +568,13 @@ resource "libvirt_volume" "siftstation_root" {
 # siftstation domain
 resource "libvirt_domain" "siftstation" {
   name = "${var.case_id}-siftstation"
-  depends_on = [
-    #libvirt_domain.worker,
-    time_sleep.wait_for_worker
-  ]
+  #  depends_on = [
+  #    time_sleep.wait_for_worker
+  #  ]
   autostart = true
-  memory    = "8192"
-  vcpu      = 4
+  #memory    = "8192"
+  memory    = "16384"
+  vcpu      = 6
   cloudinit = libvirt_cloudinit_disk.cloudinit_siftstation.id
   cpu {
     mode = "host-passthrough"
