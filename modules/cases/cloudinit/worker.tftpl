@@ -120,6 +120,35 @@ write_files:
 
       [Install]
       WantedBy=multi-user.target
+  - path: /etc/systemd/system/timesketch-cleanup.timer
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      [Unit]
+      Description=Timesketch uploads cleanup timer
+
+      [Timer]
+      OnUnitInactiveSec=1h
+
+      [Install]
+      WantedBy=timers.target
+  - path: /etc/systemd/system/timesketch-cleanup.service
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      [Unit]
+      Description=Timesketch uploads cleanup
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      User=root
+      Group=root
+      ExecStart=/usr/bin/find /data/srv/timesketch/upload -type f -mtime +1 -delete
+
+      [Install]
+      WantedBy=multi-user.target
 # Update apt database and packages on first boot
 package_update: true
 package_upgrade: true
@@ -255,7 +284,7 @@ runcmd:
   - [ cd, /root/ ]
   - [ munpack, -f, /var/lib/cloud/instance/user-data.txt.i ]
   - [ cp, timesketch_template.ipynb, /data/srv/timesketch/data/notebook/timesketch_template.ipynb ]
-  - [ chmod, '0644', /data/srv/timesketch/data/notebook/timesketch_template.ipynb ]
+  - [ chmod, '0444', /data/srv/timesketch/data/notebook/timesketch_template.ipynb ]
   - [ cd, /data/srv/notebook ]
   - [ docker, compose, up, -d ]
   - [ cd ]
@@ -267,6 +296,7 @@ runcmd:
   - [ systemctl, enable, docker-cleanup.timer ]
   - [ systemctl, enable, docker-compose@timesketch ]
   - [ systemctl, enable, docker-compose@notebook ]
+  - [ systemctl, enable, timesketch-cleanup.timer ]
   # Create links to upload and download directories so the users can find them easily
   - [ ln, -s, /data/srv/timesketch/data/notebook, /data/read-write/notebook ]
   - [ ln, -s, /data/srv/timesketch/upload, /data/read-write/timesketch ]
